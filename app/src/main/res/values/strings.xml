@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hǎo Shield</string>
+    <string name="accessibility_service_description">Hǎo Shield gently protects your attention by pausing blocked apps during a protected session.</string>
+    <string name="overlay_protected_title">Protected</string>
+    <string name="overlay_protected_message">This app is resting.\nReturn when you choose.</string>
+</resources>

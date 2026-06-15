@@ -1,0 +1,1 @@
+# Hao Shield — add project-specific ProGuard rules here as needed.
