@@ -3,8 +3,10 @@ package com.haoshield.data.service.accessibility
 import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
+import com.haoshield.MainActivity
 import com.haoshield.data.service.AccessibilityAppBlockingService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -12,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -23,8 +24,6 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     @Inject lateinit var overlayManager: BlockingOverlayManager
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var lastHandledPackage: String? = null
-    private var lastHandledAtMillis: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -36,6 +35,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
+        // Ignore our own windows (including the protected overlay) so the boundary never dismisses
+        // itself when the overlay or the unblock screen appears.
+        if (packageName == applicationContext.packageName) return
+
         serviceScope.launch {
             handleForegroundPackage(packageName)
         }
@@ -56,23 +59,33 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             return
         }
 
-        val now = System.currentTimeMillis()
-        if (packageName == lastHandledPackage && now - lastHandledAtMillis < DEBOUNCE_MILLIS) {
+        if (!overlayManager.canDrawOverlay()) {
+            // Without overlay permission we can't show the calm screen; at least step the user away.
+            performGlobalAction(GLOBAL_ACTION_HOME)
             return
         }
-        lastHandledPackage = packageName
-        lastHandledAtMillis = now
 
-        performGlobalAction(GLOBAL_ACTION_HOME)
-        overlayManager.show()
-        delay(OVERLAY_VISIBLE_MILLIS)
-        overlayManager.hide()
+        overlayManager.show(
+            onUnblock = {
+                overlayManager.hide()
+                launchUnblock(packageName)
+            },
+            onStepAway = {
+                overlayManager.hide()
+                performGlobalAction(GLOBAL_ACTION_HOME)
+            },
+        )
+    }
+
+    private fun launchUnblock(packageName: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(MainActivity.EXTRA_UNBLOCK_PACKAGE, packageName)
+        }
+        startActivity(intent)
     }
 
     companion object {
-        private const val DEBOUNCE_MILLIS = 750L
-        private const val OVERLAY_VISIBLE_MILLIS = 2_500L
-
         fun isServiceEnabled(context: Context): Boolean {
             val enabledServices = Settings.Secure.getString(
                 context.contentResolver,

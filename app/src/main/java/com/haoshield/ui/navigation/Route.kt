@@ -5,6 +5,8 @@ import android.net.Uri
 sealed class Route(val path: String) {
     data object Home : Route("home")
 
+    data object Setup : Route("setup")
+
     data object SoftwareMode : Route("software_mode")
 
     data object ShieldMode : Route("shield_mode")

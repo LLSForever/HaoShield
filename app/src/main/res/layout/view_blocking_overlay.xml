@@ -18,6 +18,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-light"
+            android:text="好"
+            android:textColor="#5C6B5C"
+            android:textSize="64sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-light"
             android:letterSpacing="0.02"
             android:text="@string/overlay_protected_title"
             android:textColor="#5C6B5C"
@@ -32,5 +41,33 @@
             android:text="@string/overlay_protected_message"
             android:textColor="#6B6B68"
             android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/overlay_unblock_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="@string/overlay_unblock_action"
+            android:textColor="#5C6B5C"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/overlay_step_away_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="@string/overlay_step_away_action"
+            android:textColor="#6B6B68"
+            android:textSize="15sp" />
     </LinearLayout>
 </FrameLayout>

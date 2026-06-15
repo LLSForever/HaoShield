@@ -2,6 +2,7 @@ package com.haoshield.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.haoshield.data.permission.ShieldPermissions
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.usecase.StartSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val startSessionUseCase: StartSessionUseCase,
+    private val shieldPermissions: ShieldPermissions,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -32,6 +34,13 @@ class HomeViewModel @Inject constructor(
 
     fun onSoftwareModeClick() {
         if (_uiState.value.isStartingSoftwareSession) return
+
+        // A session with no blocking permissions would just run a timer. Send the user to set up
+        // the Shield first; once it's ready, the same tap starts the session directly.
+        if (!shieldPermissions.isReady()) {
+            viewModelScope.launch { _events.send(HomeEvent.NavigateToSetup) }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isStartingSoftwareSession = true, errorMessage = null) }
@@ -57,4 +66,5 @@ class HomeViewModel @Inject constructor(
 
 sealed interface HomeEvent {
     data object NavigateToProtected : HomeEvent
+    data object NavigateToSetup : HomeEvent
 }

@@ -39,6 +39,7 @@ fun HomeScreen(
         viewModel.events.collect { event ->
             when (event) {
                 HomeEvent.NavigateToProtected -> onNavigateToProtected()
+                HomeEvent.NavigateToSetup -> onNavigate(Route.Setup.path)
             }
         }
     }

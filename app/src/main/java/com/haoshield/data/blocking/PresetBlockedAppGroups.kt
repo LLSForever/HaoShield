@@ -21,6 +21,7 @@ internal val PresetBlockedAppGroups: List<BlockedAppGroup> = listOf(
             "com.snapchat.android",       // Snapchat
             "com.reddit.frontpage",       // Reddit
             "com.pinterest",              // Pinterest
+            "com.instagram.barcelona",    // Threads
         ),
     ),
     BlockedAppGroup(
@@ -30,16 +31,6 @@ internal val PresetBlockedAppGroups: List<BlockedAppGroup> = listOf(
             "com.google.android.youtube", // YouTube
             "com.netflix.mediaclient",    // Netflix
             "tv.twitch.android.app",      // Twitch
-        ),
-    ),
-    BlockedAppGroup(
-        id = "messaging",
-        displayName = "Messaging",
-        packageNames = listOf(
-            "com.whatsapp",               // WhatsApp
-            "com.facebook.orca",          // Messenger
-            "org.telegram.messenger",     // Telegram
-            "com.discord",                // Discord
         ),
     ),
 )

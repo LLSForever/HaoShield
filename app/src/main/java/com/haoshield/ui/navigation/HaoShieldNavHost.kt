@@ -11,6 +11,7 @@ import com.haoshield.ui.home.HomeScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
 import com.haoshield.ui.protectedscreen.ProtectedScreen
+import com.haoshield.ui.setup.SetupScreen
 
 @Composable
 fun HaoShieldNavHost(
@@ -30,6 +31,17 @@ fun HaoShieldNavHost(
                         launchSingleTop = true
                     }
                 },
+            )
+        }
+        composable(Route.Setup.path) {
+            SetupScreen(
+                onNavigateToProtected = {
+                    navController.navigate(Route.Protected.path) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() },
             )
         }
         composable(Route.ShieldMode.path) {
