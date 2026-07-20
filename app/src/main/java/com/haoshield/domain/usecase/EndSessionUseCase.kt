@@ -2,6 +2,7 @@ package com.haoshield.domain.usecase
 
 import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
+import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.service.SessionManager
 import javax.inject.Inject
 
@@ -10,6 +11,6 @@ class EndSessionUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         method: SessionEndMethod,
-        shieldTagId: String? = null,
-    ): SessionEndResult = sessionManager.endSession(method, shieldTagId)
+        shieldToken: ShieldToken? = null,
+    ): SessionEndResult = sessionManager.endSession(method, shieldToken)
 }

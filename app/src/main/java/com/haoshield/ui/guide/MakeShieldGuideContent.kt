@@ -57,4 +57,23 @@ internal object MakeShieldGuideContent {
     const val alreadyRegistered =
         "You already have a Shield registered on this device. You can register a new " +
             "tag below if you have made another."
+
+    const val chooseMethodPrompt =
+        "Your Shield can be a physical NFC tag you tap, or a printed code you scan. " +
+            "Either works — or keep both, so you always have a way in."
+
+    const val methodNfcLabel = "Use an NFC tag"
+
+    const val methodQrLabel = "Use a printed code"
+
+    const val qrDisplayInstruction =
+        "This is your Shield code. Print it and keep it somewhere meaningful — beside your " +
+            "desk, on the fridge, wherever calls you back to yourself."
+
+    const val qrConfirmPrompt =
+        "Once it's printed, scan the printed code to confirm your Shield. This proves the " +
+            "print really works, so you can rely on it later."
+
+    const val qrRegisterSuccess =
+        "Your printed Hǎo Shield is registered. Scan it to begin and end protected time."
 }

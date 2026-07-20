@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,7 +23,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,14 +31,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.SessionMode
-
-private val Sage = Color(0xFF5C6B5C)
-private val MutedText = Color(0xFF6B6B68)
-private val WarmBackground = Color(0xFFF7F5F0)
+import com.haoshield.ui.theme.MutedText
+import com.haoshield.ui.theme.Sage
+import com.haoshield.ui.theme.WarmBackground
 
 @Composable
 fun ProtectedScreen(
     onNavigateHome: () -> Unit,
+    onNavigateToScanner: () -> Unit,
     viewModel: ProtectedScreenViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -142,6 +144,153 @@ fun ProtectedScreen(
                     color = MutedText.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                 )
+            }
+
+            if (uiState.sessionMode == SessionMode.SHIELD && uiState.hasQrToken) {
+                TextButton(
+                    onClick = onNavigateToScanner,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text(
+                        text = "Scan your printed Shield to end",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Sage.copy(alpha = 0.8f),
+                    )
+                }
+            }
+
+            if (uiState.sessionMode == SessionMode.SHIELD) {
+                TextButton(
+                    onClick = viewModel::onRequestEmergencyExit,
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(
+                        text = "I don't have my Shield with me",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MutedText.copy(alpha = 0.6f),
+                    )
+                }
+            }
+        }
+
+        uiState.emergencyStep?.let { emergencyStep ->
+            EmergencyExitPanel(
+                step = emergencyStep,
+                note = uiState.emergencyNote,
+                countdownSeconds = uiState.emergencyCountdownSeconds,
+                onNoteChange = viewModel::onEmergencyNoteChange,
+                onStartCountdown = viewModel::onStartEmergencyCountdown,
+                onCancel = viewModel::onCancelEmergencyExit,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmergencyExitPanel(
+    step: EmergencyExitStep,
+    note: String,
+    countdownSeconds: Int,
+    onNoteChange: (String) -> Unit,
+    onStartCountdown: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(WarmBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 32.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        when (step) {
+            EmergencyExitStep.WRITING_NOTE -> {
+                Text(
+                    text = "Ending without your Shield",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
+                    color = Sage,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "Write what brought you here. Your session will end after a " +
+                        "minute of stillness.",
+                    modifier = Modifier.padding(top = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MutedText,
+                    textAlign = TextAlign.Center,
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = onNoteChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    placeholder = {
+                        Text(
+                            text = "A short, honest intention…",
+                            color = MutedText.copy(alpha = 0.5f),
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Sage.copy(alpha = 0.6f),
+                        unfocusedBorderColor = MutedText.copy(alpha = 0.25f),
+                        cursorColor = Sage,
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    ),
+                    minLines = 3,
+                )
+                TextButton(
+                    onClick = onStartCountdown,
+                    enabled = note.isNotBlank(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                ) {
+                    Text(
+                        text = "Continue",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (note.isNotBlank()) Sage else MutedText,
+                    )
+                }
+                TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Stay in the session",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MutedText,
+                    )
+                }
+            }
+
+            EmergencyExitStep.COUNTDOWN -> {
+                Text(
+                    text = countdownSeconds.toString(),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 72.sp,
+                        fontWeight = FontWeight.Light,
+                    ),
+                    color = Sage,
+                )
+                Text(
+                    text = "Breathe. The session will end on its own.",
+                    modifier = Modifier.padding(top = 20.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MutedText,
+                    textAlign = TextAlign.Center,
+                )
+                TextButton(
+                    onClick = onCancel,
+                    modifier = Modifier.padding(top = 32.dp),
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MutedText,
+                    )
+                }
             }
         }
     }

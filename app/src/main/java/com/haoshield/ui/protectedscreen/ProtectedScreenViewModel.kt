@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.haoshield.data.audio.AmbientMusicPlayer
 import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
+import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.domain.service.SessionManager
+import com.haoshield.domain.service.ShieldTokenStore
 import com.haoshield.domain.usecase.EndSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -25,6 +27,7 @@ class ProtectedScreenViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val endSessionUseCase: EndSessionUseCase,
     private val ambientMusicPlayer: AmbientMusicPlayer,
+    private val shieldTokenStore: ShieldTokenStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProtectedScreenUiState())
@@ -34,10 +37,12 @@ class ProtectedScreenViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     private var quoteRotationJob: Job? = null
+    private var countdownJob: Job? = null
     private var lastQuote: String? = null
 
     init {
         observeSession()
+        observeQrToken()
     }
 
     fun onToggleAmbientMusic() {
@@ -81,9 +86,94 @@ class ProtectedScreenViewModel @Inject constructor(
         }
     }
 
+    fun onRequestEmergencyExit() {
+        _uiState.update {
+            it.copy(
+                emergencyStep = EmergencyExitStep.WRITING_NOTE,
+                emergencyNote = "",
+                endSessionHint = null,
+            )
+        }
+    }
+
+    fun onEmergencyNoteChange(note: String) {
+        if (note.length > EMERGENCY_NOTE_MAX_LENGTH) return
+        _uiState.update { it.copy(emergencyNote = note) }
+    }
+
+    fun onCancelEmergencyExit() {
+        countdownJob?.cancel()
+        countdownJob = null
+        _uiState.update {
+            it.copy(
+                emergencyStep = null,
+                emergencyNote = "",
+                emergencyCountdownSeconds = 0,
+            )
+        }
+    }
+
+    fun onStartEmergencyCountdown() {
+        val note = _uiState.value.emergencyNote
+        if (note.isBlank() || countdownJob?.isActive == true) return
+
+        _uiState.update {
+            it.copy(
+                emergencyStep = EmergencyExitStep.COUNTDOWN,
+                emergencyCountdownSeconds = EMERGENCY_COUNTDOWN_SECONDS,
+            )
+        }
+
+        countdownJob = viewModelScope.launch {
+            var remaining = EMERGENCY_COUNTDOWN_SECONDS
+            while (remaining > 0) {
+                delay(1_000L)
+                remaining -= 1
+                _uiState.update { it.copy(emergencyCountdownSeconds = remaining) }
+            }
+
+            when (val result = sessionManager.endShieldSessionByEmergency(note)) {
+                is SessionEndResult.Ended -> {
+                    stopAmbientMusic()
+                    _uiState.update {
+                        it.copy(emergencyStep = null, emergencyNote = "", emergencyCountdownSeconds = 0)
+                    }
+                    _events.send(ProtectedScreenEvent.NavigateHome)
+                }
+                is SessionEndResult.RequiresShieldScan -> {
+                    _uiState.update {
+                        it.copy(
+                            emergencyStep = null,
+                            emergencyCountdownSeconds = 0,
+                            endSessionHint = result.message,
+                        )
+                    }
+                }
+                is SessionEndResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            emergencyStep = null,
+                            emergencyCountdownSeconds = 0,
+                            endSessionHint = result.reason,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         ambientMusicPlayer.pause()
         super.onCleared()
+    }
+
+    private fun observeQrToken() {
+        viewModelScope.launch {
+            shieldTokenStore.observeRegisteredTokens().collect { tokens ->
+                val hasQr = tokens.any { it.kind == ShieldTokenKind.QR }
+                _uiState.update { it.copy(hasQrToken = hasQr) }
+            }
+        }
     }
 
     private fun observeSession() {
@@ -152,6 +242,8 @@ class ProtectedScreenViewModel @Inject constructor(
         const val QUOTE_VISIBLE_MIN_MS = 20_000L
         const val QUOTE_VISIBLE_MAX_MS = 30_000L
         const val QUOTE_INTERVAL_MS = 50_000L
+        const val EMERGENCY_COUNTDOWN_SECONDS = 60
+        const val EMERGENCY_NOTE_MAX_LENGTH = 240
     }
 }
 

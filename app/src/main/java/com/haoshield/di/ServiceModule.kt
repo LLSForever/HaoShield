@@ -3,11 +3,13 @@ package com.haoshield.di
 import com.haoshield.data.service.AccessibilityAppBlockingService
 import com.haoshield.data.service.AppBlockingService
 import com.haoshield.data.nfc.NfcManagerImpl
-import com.haoshield.data.service.NfcShieldService
-import com.haoshield.data.service.NfcShieldServiceImpl
 import com.haoshield.data.service.SessionManagerImpl
+import com.haoshield.data.shield.ShieldScanHandlerImpl
+import com.haoshield.data.shield.ShieldTokenStoreImpl
 import com.haoshield.domain.service.NfcManager
 import com.haoshield.domain.service.SessionManager
+import com.haoshield.domain.service.ShieldScanHandler
+import com.haoshield.domain.service.ShieldTokenStore
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -25,9 +27,15 @@ abstract class ServiceModule {
 
     @Binds
     @Singleton
-    abstract fun bindNfcShieldService(
-        impl: NfcShieldServiceImpl,
-    ): NfcShieldService
+    abstract fun bindShieldTokenStore(
+        impl: ShieldTokenStoreImpl,
+    ): ShieldTokenStore
+
+    @Binds
+    @Singleton
+    abstract fun bindShieldScanHandler(
+        impl: ShieldScanHandlerImpl,
+    ): ShieldScanHandler
 
     @Binds
     @Singleton

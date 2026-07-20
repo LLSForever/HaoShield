@@ -6,12 +6,16 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.haoshield.domain.model.ScanMode
+import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
 import com.haoshield.ui.protectedscreen.ProtectedScreen
+import com.haoshield.ui.scanner.QrScannerScreen
 import com.haoshield.ui.setup.SetupScreen
+import com.haoshield.ui.shieldmode.ShieldModeScreen
 
 @Composable
 fun HaoShieldNavHost(
@@ -45,7 +49,20 @@ fun HaoShieldNavHost(
             )
         }
         composable(Route.ShieldMode.path) {
-            // Shield mode screen — Phase 1 UI
+            ShieldModeScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToGuide = { navController.navigate(Route.Guide.path) },
+                onNavigateToScanner = {
+                    navController.navigate(Route.QrScanner.createRoute(ScanMode.SESSION))
+                },
+                onNavigateToSetup = { navController.navigate(Route.Setup.path) },
+                onNavigateToProtected = {
+                    navController.navigate(Route.Protected.path) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
         composable(Route.Protected.path) {
             ProtectedScreen(
@@ -54,6 +71,9 @@ fun HaoShieldNavHost(
                         popUpTo(Route.Home.path) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onNavigateToScanner = {
+                    navController.navigate(Route.QrScanner.createRoute(ScanMode.SESSION))
                 },
             )
         }
@@ -74,10 +94,30 @@ fun HaoShieldNavHost(
         composable(Route.Guide.path) {
             MakeShieldGuideScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToScanner = { mode ->
+                    navController.navigate(Route.QrScanner.createRoute(mode))
+                },
             )
         }
-        composable(Route.Letters.path) {
-            // Hǎo Letters opt-in — Phase 1 UI
+        composable(
+            route = Route.QrScanner.path,
+            arguments = listOf(
+                navArgument(Route.QrScanner.ARG_SCAN_MODE) { type = NavType.StringType },
+            ),
+        ) {
+            QrScannerScreen(
+                onFinished = { result ->
+                    // Session start/end navigation is owned by MainActivity's global collector
+                    // (it rebuilds the back stack via popUpTo(Home)); popping here too would race
+                    // with it. For registration and errors, just return to the caller.
+                    when (result) {
+                        is ShieldScanResult.SessionStarted,
+                        is ShieldScanResult.SessionEnded -> Unit
+                        else -> navController.popBackStack()
+                    }
+                },
+                onCancel = { navController.popBackStack() },
+            )
         }
     }
 }

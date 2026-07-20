@@ -26,6 +26,7 @@ fun JournalEntry.toUiModel(appLabel: String? = null): JournalEntryUiModel {
         typeLabel = when (type) {
             JournalEntryType.UNBLOCK -> "Unblock intention"
             JournalEntryType.REFLECTION -> "Reflection"
+            JournalEntryType.EMERGENCY_EXIT -> "Ended without Shield"
         },
         appLabel = resolvedAppLabel,
     )

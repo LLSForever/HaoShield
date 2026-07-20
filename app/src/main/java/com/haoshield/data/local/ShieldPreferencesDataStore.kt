@@ -23,6 +23,8 @@ class ShieldPreferencesDataStore @Inject constructor(
 ) {
     private val dataStore = context.shieldDataStore
 
+    // --- Registered NFC UID (unchanged key — preserves existing registrations) ---
+
     fun observeRegisteredUid(): Flow<String?> =
         dataStore.data.map { preferences ->
             preferences[Keys.REGISTERED_UID]
@@ -43,7 +45,48 @@ class ShieldPreferencesDataStore @Inject constructor(
         }
     }
 
+    // --- Registered QR payload ---
+
+    fun observeRegisteredQr(): Flow<String?> =
+        dataStore.data.map { preferences ->
+            preferences[Keys.REGISTERED_QR]
+        }
+
+    suspend fun getRegisteredQr(): String? =
+        dataStore.data.first()[Keys.REGISTERED_QR]
+
+    suspend fun persistRegisteredQr(payload: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.REGISTERED_QR] = payload
+        }
+    }
+
+    suspend fun clearRegisteredQr() {
+        dataStore.edit { preferences ->
+            preferences.remove(Keys.REGISTERED_QR)
+        }
+    }
+
+    // --- Pending QR payload (generated but not yet confirmed by a scan) ---
+
+    suspend fun getPendingQr(): String? =
+        dataStore.data.first()[Keys.PENDING_QR]
+
+    suspend fun persistPendingQr(payload: String) {
+        dataStore.edit { preferences ->
+            preferences[Keys.PENDING_QR] = payload
+        }
+    }
+
+    suspend fun clearPendingQr() {
+        dataStore.edit { preferences ->
+            preferences.remove(Keys.PENDING_QR)
+        }
+    }
+
     private object Keys {
         val REGISTERED_UID = stringPreferencesKey("registered_shield_uid")
+        val REGISTERED_QR = stringPreferencesKey("registered_qr_token")
+        val PENDING_QR = stringPreferencesKey("pending_qr_token")
     }
 }

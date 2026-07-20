@@ -6,12 +6,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val CalmColorScheme = lightColorScheme(
-    primary = Color(0xFF5C6B5C),
+    primary = Sage,
     onPrimary = Color(0xFFFFFFFF),
-    background = Color(0xFFF7F5F0),
-    onBackground = Color(0xFF2C2C2A),
-    surface = Color(0xFFF7F5F0),
-    onSurface = Color(0xFF2C2C2A),
+    background = WarmBackground,
+    onBackground = Ink,
+    surface = WarmBackground,
+    onSurface = Ink,
+    surfaceVariant = SoftAccent,
+    onSurfaceVariant = MutedText,
+    secondary = MutedText,
 )
 
 @Composable

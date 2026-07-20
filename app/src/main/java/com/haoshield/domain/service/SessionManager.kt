@@ -5,6 +5,7 @@ import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.SessionState
+import com.haoshield.domain.model.ShieldToken
 import kotlinx.coroutines.flow.Flow
 
 interface SessionManager {
@@ -20,8 +21,14 @@ interface SessionManager {
 
     suspend fun endSession(
         method: SessionEndMethod,
-        shieldTagId: String? = null,
+        shieldToken: ShieldToken? = null,
     ): SessionEndResult
+
+    /**
+     * Ends an active Shield Mode session without the physical token, after the friction of a
+     * written intention. Records the note to the journal as one atomic operation.
+     */
+    suspend fun endShieldSessionByEmergency(note: String): SessionEndResult
 
     suspend fun allowAppTemporarily(
         packageName: String,

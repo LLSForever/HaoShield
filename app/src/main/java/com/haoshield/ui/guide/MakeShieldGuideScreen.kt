@@ -1,6 +1,7 @@
 package com.haoshield.ui.guide
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,32 +20,42 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
-private val WarmBackground = Color(0xFFF7F5F0)
-private val Sage = Color(0xFF5C6B5C)
-private val MutedText = Color(0xFF6B6B68)
-private val SoftAccent = Color(0xFFE8E4DC)
+import com.haoshield.domain.model.ScanMode
+import com.haoshield.ui.theme.MutedText
+import com.haoshield.ui.theme.Sage
+import com.haoshield.ui.theme.SoftAccent
+import com.haoshield.ui.theme.WarmBackground
 
 @Composable
 fun MakeShieldGuideScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToScanner: (ScanMode) -> Unit,
     viewModel: MakeShieldGuideViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as ComponentActivity
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
 
     when (uiState.step) {
         GuideStep.CONTENT -> GuideContentStep(
             uiState = uiState,
             onNavigateBack = onNavigateBack,
             onBeginRegistration = viewModel::onBeginRegistration,
+        )
+        GuideStep.CHOOSE_METHOD -> ChooseMethodStep(
+            isGeneratingQr = uiState.isGeneratingQr,
+            onChooseNfc = viewModel::onChooseNfcMethod,
+            onChooseQr = viewModel::onChooseQrMethod,
+            onBack = viewModel::onBackToContent,
         )
         GuideStep.REGISTER -> {
             DisposableEffect(Unit) {
@@ -52,9 +64,15 @@ fun MakeShieldGuideScreen(
             }
             RegisterShieldStep(
                 uiState = uiState,
-                onBack = viewModel::onBackToContent,
+                onBack = viewModel::onBackToChooseMethod,
             )
         }
+        GuideStep.QR_DISPLAY -> QrDisplayStep(
+            uiState = uiState,
+            onShare = { uiState.qrBitmap?.let { ShieldQrSharing.share(context, it) } },
+            onConfirmScan = { onNavigateToScanner(ScanMode.REGISTRATION) },
+            onBack = viewModel::onBackToChooseMethod,
+        )
         GuideStep.SUCCESS -> RegistrationSuccessStep(
             onContinue = viewModel::onDismissSuccess,
         )
@@ -147,6 +165,154 @@ private fun GuideContentStep(
                 } else {
                     "Register a new Shield"
                 },
+                style = MaterialTheme.typography.labelLarge,
+                color = Sage,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun ChooseMethodStep(
+    isGeneratingQr: Boolean,
+    onChooseNfc: () -> Unit,
+    onChooseQr: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(WarmBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 28.dp, vertical = 16.dp),
+    ) {
+        TextButton(onClick = onBack) {
+            Text(text = "Back", color = MutedText)
+        }
+
+        Text(
+            text = "Choose your Shield",
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
+            color = Sage,
+        )
+
+        Text(
+            text = MakeShieldGuideContent.chooseMethodPrompt,
+            modifier = Modifier.padding(top = 16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MutedText,
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        TextButton(
+            onClick = onChooseNfc,
+            enabled = !isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = MakeShieldGuideContent.methodNfcLabel,
+                style = MaterialTheme.typography.titleMedium,
+                color = Sage,
+            )
+        }
+
+        TextButton(
+            onClick = onChooseQr,
+            enabled = !isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = if (isGeneratingQr) "Preparing…" else MakeShieldGuideContent.methodQrLabel,
+                style = MaterialTheme.typography.titleMedium,
+                color = Sage,
+            )
+        }
+    }
+}
+
+@Composable
+private fun QrDisplayStep(
+    uiState: MakeShieldGuideUiState,
+    onShare: () -> Unit,
+    onConfirmScan: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(WarmBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 28.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.align(Alignment.Start),
+        ) {
+            Text(text = "Back", color = MutedText)
+        }
+
+        Text(
+            text = "Your printed Shield",
+            modifier = Modifier.align(Alignment.Start),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
+            color = Sage,
+        )
+
+        Text(
+            text = MakeShieldGuideContent.qrDisplayInstruction,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = 16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MutedText,
+        )
+
+        uiState.qrBitmap?.let { bitmap ->
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Your Hǎo Shield QR code",
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .fillMaxWidth(0.8f)
+                    .clip(RoundedCornerShape(16.dp)),
+            )
+        }
+
+        TextButton(
+            onClick = onShare,
+            modifier = Modifier.padding(top = 16.dp),
+        ) {
+            Text(
+                text = "Print or save",
+                style = MaterialTheme.typography.labelLarge,
+                color = Sage,
+            )
+        }
+
+        Text(
+            text = MakeShieldGuideContent.qrConfirmPrompt,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = 24.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MutedText,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(
+            onClick = onConfirmScan,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = "I've printed it — scan to confirm",
                 style = MaterialTheme.typography.labelLarge,
                 color = Sage,
             )

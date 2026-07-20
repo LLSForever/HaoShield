@@ -3,6 +3,7 @@ package com.haoshield.domain.model
 enum class JournalEntryType {
     UNBLOCK,
     REFLECTION,
+    EMERGENCY_EXIT,
 }
 
 data class JournalEntry(

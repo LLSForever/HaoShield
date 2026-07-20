@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.HaoShield" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+      Hǎo Shield is a Compose-only app, so a platform theme parent is intentional
+      (no AppCompat/Material Components dependency exists to inherit from). We only
+      set the pre-Compose window background and status-bar appearance to avoid a
+      white flash before the first frame draws.
+    -->
+    <style name="Theme.HaoShield" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/hao_warm_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

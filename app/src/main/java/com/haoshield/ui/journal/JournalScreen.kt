@@ -16,15 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
-private val WarmBackground = Color(0xFFF7F5F0)
-private val Sage = Color(0xFF5C6B5C)
-private val MutedText = Color(0xFF6B6B68)
+import com.haoshield.ui.theme.MutedText
+import com.haoshield.ui.theme.Sage
+import com.haoshield.ui.theme.WarmBackground
 
 @Composable
 fun JournalScreen(

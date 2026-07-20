@@ -10,8 +10,10 @@ import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.SessionState
+import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.repository.JournalRepository
 import com.haoshield.domain.service.SessionManager
+import com.haoshield.domain.service.ShieldTokenStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,7 +32,7 @@ import javax.inject.Singleton
 class SessionManagerImpl @Inject constructor(
     private val sessionPreferencesDataStore: SessionPreferencesDataStore,
     private val journalRepository: JournalRepository,
-    private val nfcShieldService: NfcShieldService,
+    private val shieldTokenStore: ShieldTokenStore,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : SessionManager {
 
@@ -59,7 +62,7 @@ class SessionManagerImpl @Inject constructor(
         clearActiveSessionForReplacement()
 
         val session = Session(
-            id = System.currentTimeMillis(),
+            id = UUID.randomUUID().mostSignificantBits,
             mode = mode,
             startedAtEpochMillis = System.currentTimeMillis(),
             isActive = true,
@@ -83,13 +86,13 @@ class SessionManagerImpl @Inject constructor(
 
     override suspend fun endSession(
         method: SessionEndMethod,
-        shieldTagId: String?,
+        shieldToken: ShieldToken?,
     ): SessionEndResult {
         val current = sessionState.value ?: return SessionEndResult.Failed("No active session.")
 
         return when (current.session.mode) {
             SessionMode.SOFTWARE -> endSoftwareSession(method)
-            SessionMode.SHIELD -> endShieldSession(method, shieldTagId)
+            SessionMode.SHIELD -> endShieldSession(method, shieldToken)
         }
     }
 
@@ -153,21 +156,47 @@ class SessionManagerImpl @Inject constructor(
 
     private suspend fun endShieldSession(
         method: SessionEndMethod,
-        shieldTagId: String?,
+        shieldToken: ShieldToken?,
     ): SessionEndResult {
         return when (method) {
             SessionEndMethod.IN_APP -> SessionEndResult.RequiresShieldScan()
             SessionEndMethod.SHIELD_SCAN -> {
-                val tagId = shieldTagId?.takeIf { it.isNotBlank() }
-                    ?: return SessionEndResult.Failed("Shield tag is required.")
-                if (!nfcShieldService.validateShield(tagId)) {
+                val token = shieldToken?.takeIf { it.id.isNotBlank() }
+                    ?: return SessionEndResult.Failed("Shield token is required.")
+                if (!shieldTokenStore.validate(token)) {
                     return SessionEndResult.Failed("This is not your registered Hǎo Shield.")
                 }
                 clearActiveSessionForReplacement()
                     ?.let { SessionEndResult.Ended(it) }
                     ?: SessionEndResult.Failed("Unable to end session.")
             }
+            SessionEndMethod.EMERGENCY ->
+                SessionEndResult.Failed("Use the emergency exit to end without your Shield.")
         }
+    }
+
+    override suspend fun endShieldSessionByEmergency(note: String): SessionEndResult {
+        val current = sessionState.value
+            ?: return SessionEndResult.Failed("No active session.")
+        if (current.session.mode != SessionMode.SHIELD) {
+            return SessionEndResult.Failed("Only Shield sessions use the emergency exit.")
+        }
+        if (note.isBlank()) {
+            return SessionEndResult.Failed("An intention note is required.")
+        }
+
+        journalRepository.saveEntry(
+            JournalEntry(
+                content = note,
+                createdAtEpochMillis = System.currentTimeMillis(),
+                sessionId = current.session.id,
+                type = JournalEntryType.EMERGENCY_EXIT,
+            ),
+        )
+
+        return clearActiveSessionForReplacement()
+            ?.let { SessionEndResult.Ended(it) }
+            ?: SessionEndResult.Failed("Unable to end session.")
     }
 
     private suspend fun clearActiveSessionForReplacement(): Session? {

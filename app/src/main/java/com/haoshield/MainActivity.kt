@@ -5,11 +5,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.haoshield.domain.model.NfcReaderMode
+import com.haoshield.domain.model.ScanMode
+import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.domain.service.NfcManager
+import com.haoshield.domain.service.ShieldScanHandler
 import com.haoshield.ui.navigation.HaoShieldNavHost
 import com.haoshield.ui.navigation.Route
 import com.haoshield.ui.theme.HaoShieldTheme
@@ -21,6 +32,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var nfcManager: NfcManager
 
+    @Inject lateinit var shieldScanHandler: ShieldScanHandler
+
     // Set when the blocking overlay asks us to open the unblock screen for a specific app.
     private val pendingUnblockPackage = mutableStateOf<String?>(null)
 
@@ -31,7 +44,47 @@ class MainActivity : ComponentActivity() {
         setContent {
             HaoShieldTheme {
                 val navController = rememberNavController()
-                HaoShieldNavHost(navController = navController)
+                val snackbarHostState = remember { SnackbarHostState() }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    HaoShieldNavHost(navController = navController)
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding(),
+                    )
+                }
+
+                // A shield tap/scan can happen on any screen, so react to results here rather
+                // than in a single screen. Navigation on start/end; a quiet snackbar otherwise.
+                LaunchedEffect(Unit) {
+                    shieldScanHandler.observeScanResults().collect { result ->
+                        when (result) {
+                            is ShieldScanResult.SessionStarted -> {
+                                navController.navigate(Route.Protected.path) {
+                                    popUpTo(Route.Home.path) { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            }
+                            is ShieldScanResult.SessionEnded -> {
+                                navController.navigate(Route.Home.path) {
+                                    popUpTo(Route.Home.path) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                            is ShieldScanResult.InvalidShield ->
+                                snackbarHostState.showSnackbar("That isn't your registered Hǎo Shield.")
+                            ShieldScanResult.NoShieldRegistered ->
+                                snackbarHostState.showSnackbar("No Hǎo Shield is registered yet.")
+                            ShieldScanResult.SoftwareSessionActive ->
+                                snackbarHostState.showSnackbar("A Software session is already running.")
+                            is ShieldScanResult.Failed ->
+                                snackbarHostState.showSnackbar(result.reason)
+                            is ShieldScanResult.RegistrationComplete -> Unit
+                        }
+                    }
+                }
 
                 val unblockPackage = pendingUnblockPackage.value
                 LaunchedEffect(unblockPackage) {
@@ -55,7 +108,7 @@ class MainActivity : ComponentActivity() {
         if (nfcManager.isNfcAvailable() && nfcManager.isNfcEnabled()) {
             nfcManager.enableForegroundReader(
                 activity = this,
-                mode = NfcReaderMode.SESSION,
+                mode = ScanMode.SESSION,
             )
         }
     }

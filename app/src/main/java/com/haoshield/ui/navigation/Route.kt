@@ -1,13 +1,12 @@
 package com.haoshield.ui.navigation
 
 import android.net.Uri
+import com.haoshield.domain.model.ScanMode
 
 sealed class Route(val path: String) {
     data object Home : Route("home")
 
     data object Setup : Route("setup")
-
-    data object SoftwareMode : Route("software_mode")
 
     data object ShieldMode : Route("shield_mode")
 
@@ -22,5 +21,9 @@ sealed class Route(val path: String) {
 
     data object Guide : Route("guide")
 
-    data object Letters : Route("letters")
+    data object QrScanner : Route("qr_scanner/{scanMode}") {
+        const val ARG_SCAN_MODE = "scanMode"
+
+        fun createRoute(mode: ScanMode): String = "qr_scanner/${mode.name}"
+    }
 }

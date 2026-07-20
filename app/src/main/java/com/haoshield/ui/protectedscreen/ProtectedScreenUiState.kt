@@ -2,6 +2,11 @@ package com.haoshield.ui.protectedscreen
 
 import com.haoshield.domain.model.SessionMode
 
+enum class EmergencyExitStep {
+    WRITING_NOTE,
+    COUNTDOWN,
+}
+
 data class ProtectedScreenUiState(
     val formattedElapsedTime: String = "00:00",
     val sessionMode: SessionMode? = null,
@@ -11,6 +16,10 @@ data class ProtectedScreenUiState(
     val quoteVisible: Boolean = false,
     val endSessionHint: String? = null,
     val isEndingSession: Boolean = false,
+    val emergencyStep: EmergencyExitStep? = null,
+    val emergencyNote: String = "",
+    val emergencyCountdownSeconds: Int = 0,
+    val hasQrToken: Boolean = false,
 ) {
     val protectionMessage: String
         get() = when (sessionMode) {
