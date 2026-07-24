@@ -11,18 +11,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.haoshield.ui.theme.MutedText
-import com.haoshield.ui.theme.Sage
-import com.haoshield.ui.theme.WarmBackground
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun JournalScreen(
@@ -33,7 +29,7 @@ fun JournalScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmBackground)
+            .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 24.dp),
@@ -41,22 +37,22 @@ fun JournalScreen(
         Text(
             text = "Journal",
             modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
         )
 
         Text(
             text = "A quiet record of your intentions and reflections.",
             modifier = Modifier.padding(bottom = 24.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
 
         if (entries.isEmpty()) {
             Text(
                 text = "Your entries will appear here.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MutedText.copy(alpha = 0.8f),
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft.copy(alpha = 0.8f),
             )
         } else {
             LazyColumn(
@@ -66,7 +62,7 @@ fun JournalScreen(
                     JournalEntryRow(entry = entry)
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 16.dp),
-                        color = MutedText.copy(alpha = 0.15f),
+                        color = HaoTheme.colors.inkSoft.copy(alpha = 0.15f),
                     )
                 }
             }
@@ -79,37 +75,37 @@ private fun JournalEntryRow(entry: JournalEntryUiModel) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = entry.formattedDate,
-            style = MaterialTheme.typography.labelMedium,
-            color = MutedText.copy(alpha = 0.75f),
+            style = HaoTheme.type.label,
+            color = HaoTheme.colors.inkSoft.copy(alpha = 0.75f),
         )
 
         if (entry.isUnblockEntry) {
             Text(
                 text = entry.appLabel.orEmpty(),
                 modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.titleSmall,
-                color = Sage,
+                style = HaoTheme.type.heading,
+                color = HaoTheme.colors.ink,
             )
             Text(
                 text = entry.typeLabel,
                 modifier = Modifier.padding(top = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MutedText.copy(alpha = 0.7f),
+                style = HaoTheme.type.label,
+                color = HaoTheme.colors.inkSoft.copy(alpha = 0.7f),
             )
         } else {
             Text(
                 text = entry.typeLabel,
                 modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MutedText.copy(alpha = 0.7f),
+                style = HaoTheme.type.label,
+                color = HaoTheme.colors.inkSoft.copy(alpha = 0.7f),
             )
         }
 
         Text(
             text = entry.content,
             modifier = Modifier.padding(top = 10.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.ink,
         )
     }
 }

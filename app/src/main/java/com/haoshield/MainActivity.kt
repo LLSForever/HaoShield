@@ -23,7 +23,7 @@ import com.haoshield.domain.service.NfcManager
 import com.haoshield.domain.service.ShieldScanHandler
 import com.haoshield.ui.navigation.HaoShieldNavHost
 import com.haoshield.ui.navigation.Route
-import com.haoshield.ui.theme.HaoShieldTheme
+import com.haoshield.ui.theme.HaoTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         pendingUnblockPackage.value = intent?.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
         setContent {
-            HaoShieldTheme {
+            HaoTheme {
                 val navController = rememberNavController()
                 val snackbarHostState = remember { SnackbarHostState() }
 

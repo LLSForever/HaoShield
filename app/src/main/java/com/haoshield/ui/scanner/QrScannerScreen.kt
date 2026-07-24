@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -47,9 +45,7 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.haoshield.domain.model.ShieldScanResult
-import com.haoshield.ui.theme.MutedText
-import com.haoshield.ui.theme.Sage
-import com.haoshield.ui.theme.WarmBackground
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun QrScannerScreen(
@@ -92,7 +88,7 @@ fun QrScannerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmBackground)
+            .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 28.dp, vertical = 16.dp),
@@ -102,14 +98,14 @@ fun QrScannerScreen(
             onClick = onCancel,
             modifier = Modifier.align(Alignment.Start),
         ) {
-            Text(text = "Cancel", color = MutedText)
+            Text(text = "Cancel", color = HaoTheme.colors.inkSoft)
         }
 
         Text(
             text = "Scan your Shield",
             modifier = Modifier.align(Alignment.Start),
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+            style = HaoTheme.type.heading,
+            color = HaoTheme.colors.ink,
         )
 
         Text(
@@ -117,8 +113,8 @@ fun QrScannerScreen(
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(top = 8.dp, bottom = 24.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
 
         if (hasCameraPermission) {
@@ -151,8 +147,8 @@ fun QrScannerScreen(
             Text(
                 text = hint,
                 modifier = Modifier.padding(top = 20.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MutedText,
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
             )
         }
@@ -220,18 +216,18 @@ private fun CameraPermissionRationale(
         Text(
             text = "The camera is only used to recognize your printed Shield. " +
                 "Nothing is recorded or sent anywhere.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
             textAlign = TextAlign.Center,
         )
         Box(modifier = Modifier.padding(top = 16.dp)) {
             if (permissionRequested) {
                 TextButton(onClick = onOpenSettings) {
-                    Text(text = "Open settings", color = Sage)
+                    Text(text = "Open settings", color = HaoTheme.colors.ink)
                 }
             } else {
                 TextButton(onClick = onRequest) {
-                    Text(text = "Allow camera", color = Sage)
+                    Text(text = "Allow camera", color = HaoTheme.colors.ink)
                 }
             }
         }

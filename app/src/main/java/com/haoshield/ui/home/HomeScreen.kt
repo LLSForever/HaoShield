@@ -1,29 +1,32 @@
 package com.haoshield.ui.home
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.domain.model.BlockingMode
+import com.haoshield.ui.components.HaoGlyphButton
 import com.haoshield.ui.navigation.Route
-import com.haoshield.ui.theme.MutedText
-import com.haoshield.ui.theme.Sage
-import com.haoshield.ui.theme.WarmBackground
+import com.haoshield.ui.theme.HaoMotion
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun HomeScreen(
@@ -38,6 +41,8 @@ fun HomeScreen(
             when (event) {
                 HomeEvent.NavigateToProtected -> onNavigateToProtected()
                 HomeEvent.NavigateToSetup -> onNavigate(Route.Setup.path)
+                HomeEvent.NavigateToGuide -> onNavigate(Route.Guide.path)
+                is HomeEvent.NavigateToScanner -> onNavigate(Route.QrScanner.createRoute(event.mode))
             }
         }
     }
@@ -45,91 +50,98 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmBackground)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 28.dp, vertical = 32.dp),
+            .padding(horizontal = HaoTheme.spacing.screenH),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "Hǎo Shield",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+        Spacer(modifier = Modifier.weight(1f))
+
+        HaoGlyphButton(
+            active = uiState.phase == HomePhase.Active,
+            contentDescription = glyphContentDescription(uiState),
+            onClick = viewModel::onGlyphClick,
         )
 
-        Text(
-            text = "Protect your attention. Return to yourself.",
-            modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MutedText,
-        )
+        Crossfade(
+            targetState = subtitleFor(uiState),
+            animationSpec = tween(HaoMotion.STANDARD),
+            label = "subtitle",
+        ) { subtitle ->
+            Text(
+                text = subtitle,
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+            )
+        }
 
-        Spacer(modifier = Modifier.height(40.dp))
-
-        HomeNavButton(
-            label = if (uiState.isStartingSoftwareSession) "Starting…" else "Software Mode",
-            description = "A lighter way to begin",
-            onClick = viewModel::onSoftwareModeClick,
-            enabled = !uiState.isStartingSoftwareSession,
-        )
-
-        HomeNavButton(
-            label = "Shield Mode",
-            description = "Use your physical Hǎo Shield",
-            onClick = { onNavigate(Route.ShieldMode.path) },
-        )
+        if (uiState.phase == HomePhase.AwaitingShield) {
+            if (uiState.hasQrToken) {
+                TextButton(
+                    onClick = viewModel::onScanPrintedShield,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+                ) {
+                    Text(
+                        text = "Scan your printed Shield",
+                        style = HaoTheme.type.caption,
+                        color = HaoTheme.colors.ink,
+                    )
+                }
+            }
+            TextButton(onClick = viewModel::onCancelAwaiting) {
+                Text(
+                    text = "Cancel",
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkSoft,
+                )
+            }
+        }
 
         uiState.errorMessage?.let { message ->
             Text(
                 text = message,
-                modifier = Modifier.padding(top = 8.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MutedText,
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
-        HomeNavButton(
-            label = "Journal",
-            description = "Your intentions and reflections",
-            onClick = { onNavigate(Route.Journal.path) },
-        )
-
-        HomeNavButton(
-            label = MakeShieldGuideLabel,
-            description = "Craft and register a physical Shield",
-            onClick = { onNavigate(Route.Guide.path) },
-        )
+        Row(
+            modifier = Modifier.padding(bottom = HaoTheme.spacing.xl),
+            horizontalArrangement = Arrangement.spacedBy(HaoTheme.spacing.lg),
+        ) {
+            TextButton(onClick = { onNavigate(Route.Journal.path) }) {
+                Text(text = "Journal", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
+            }
+            TextButton(onClick = { onNavigate(Route.Settings.path) }) {
+                Text(text = "Settings", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
+            }
+        }
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xs))
     }
 }
 
-private const val MakeShieldGuideLabel = "Make Your Own Hǎo Shield"
-
-@Composable
-private fun HomeNavButton(
-    label: String,
-    description: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (enabled) Sage else MutedText,
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MutedText.copy(alpha = 0.8f),
-            )
-        }
+private fun subtitleFor(state: HomeUiState): String = when (state.phase) {
+    HomePhase.Active -> when (state.elapsedMinutes) {
+        0L -> "Protected · just now"
+        1L -> "Protected · 1 minute"
+        else -> "Protected · ${state.elapsedMinutes} minutes"
     }
+    HomePhase.AwaitingShield -> "Hold your Shield to the back of your phone"
+    HomePhase.Idle -> when (state.mode) {
+        BlockingMode.SOFTWARE -> "Tap to begin"
+        BlockingMode.SHIELD ->
+            if (state.hasAnyToken) "Tap your Shield to begin" else "Register your Shield to begin"
+    }
+}
+
+private fun glyphContentDescription(state: HomeUiState): String = when (state.phase) {
+    HomePhase.Active -> "Session in progress, ${state.elapsedMinutes} minutes elapsed. Open session."
+    HomePhase.AwaitingShield -> "Waiting for your Shield. Hold it to the back of your phone."
+    HomePhase.Idle -> "Begin a protected session"
 }

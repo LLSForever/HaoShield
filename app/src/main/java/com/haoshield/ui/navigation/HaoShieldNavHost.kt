@@ -12,10 +12,11 @@ import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
+import com.haoshield.ui.permissions.PermissionsScreen
 import com.haoshield.ui.protectedscreen.ProtectedScreen
 import com.haoshield.ui.scanner.QrScannerScreen
+import com.haoshield.ui.settings.SettingsScreen
 import com.haoshield.ui.setup.SetupScreen
-import com.haoshield.ui.shieldmode.ShieldModeScreen
 
 @Composable
 fun HaoShieldNavHost(
@@ -48,20 +49,16 @@ fun HaoShieldNavHost(
                 onNavigateBack = { navController.popBackStack() },
             )
         }
-        composable(Route.ShieldMode.path) {
-            ShieldModeScreen(
+        composable(Route.Settings.path) {
+            SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToGuide = { navController.navigate(Route.Guide.path) },
-                onNavigateToScanner = {
-                    navController.navigate(Route.QrScanner.createRoute(ScanMode.SESSION))
-                },
-                onNavigateToSetup = { navController.navigate(Route.Setup.path) },
-                onNavigateToProtected = {
-                    navController.navigate(Route.Protected.path) {
-                        popUpTo(Route.Home.path) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                },
+                onNavigateToPermissions = { navController.navigate(Route.Permissions.path) },
+            )
+        }
+        composable(Route.Permissions.path) {
+            PermissionsScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
         composable(Route.Protected.path) {

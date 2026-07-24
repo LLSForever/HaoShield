@@ -6,6 +6,7 @@ import com.haoshield.data.audio.AmbientMusicPlayer
 import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
 import com.haoshield.domain.model.ShieldTokenKind
+import com.haoshield.domain.repository.SettingsRepository
 import com.haoshield.domain.service.SessionManager
 import com.haoshield.domain.service.ShieldTokenStore
 import com.haoshield.domain.usecase.EndSessionUseCase
@@ -18,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ class ProtectedScreenViewModel @Inject constructor(
     private val endSessionUseCase: EndSessionUseCase,
     private val ambientMusicPlayer: AmbientMusicPlayer,
     private val shieldTokenStore: ShieldTokenStore,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProtectedScreenUiState())
@@ -40,9 +43,24 @@ class ProtectedScreenViewModel @Inject constructor(
     private var countdownJob: Job? = null
     private var lastQuote: String? = null
 
+    // Session defaults, read once when the screen opens.
+    private var quotesEnabled: Boolean = true
+
     init {
+        applySessionDefaults()
         observeSession()
         observeQrToken()
+    }
+
+    private fun applySessionDefaults() {
+        viewModelScope.launch {
+            quotesEnabled = settingsRepository.observeQuotesEnabled().first()
+            // Start ambient sound automatically if the user has it on by default.
+            if (settingsRepository.observeAmbientSoundEnabled().first() && !ambientMusicPlayer.isPlaying()) {
+                ambientMusicPlayer.play()
+                _uiState.update { it.copy(isAmbientMusicPlaying = true) }
+            }
+        }
     }
 
     fun onToggleAmbientMusic() {
@@ -200,6 +218,7 @@ class ProtectedScreenViewModel @Inject constructor(
     }
 
     private fun startQuoteRotation() {
+        if (!quotesEnabled) return
         if (quoteRotationJob?.isActive == true) return
 
         quoteRotationJob = viewModelScope.launch {

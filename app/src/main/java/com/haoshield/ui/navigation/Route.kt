@@ -8,7 +8,9 @@ sealed class Route(val path: String) {
 
     data object Setup : Route("setup")
 
-    data object ShieldMode : Route("shield_mode")
+    data object Settings : Route("settings")
+
+    data object Permissions : Route("permissions")
 
     data object Protected : Route("protected")
 

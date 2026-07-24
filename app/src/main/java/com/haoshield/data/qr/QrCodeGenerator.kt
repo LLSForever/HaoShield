@@ -32,7 +32,7 @@ class QrCodeGenerator @Inject constructor() {
     private companion object {
         const val DEFAULT_SIZE_PX = 1024
 
-        // Matches the "Ink" brand color for print contrast.
-        val INK = Color.rgb(0x2C, 0x2C, 0x2A)
+        // Matches the brand ink color for print contrast.
+        val INK = Color.rgb(0x3E, 0x4A, 0x3D)
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -24,16 +23,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.SessionMode
-import com.haoshield.ui.theme.MutedText
-import com.haoshield.ui.theme.Sage
-import com.haoshield.ui.theme.WarmBackground
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun ProtectedScreen(
@@ -54,7 +50,7 @@ fun ProtectedScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmBackground)
+            .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
@@ -69,25 +65,21 @@ fun ProtectedScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = HaoTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = uiState.formattedElapsedTime,
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 72.sp,
-                    fontWeight = FontWeight.Light,
-                    letterSpacing = 2.sp,
-                ),
-                color = Sage,
+                style = HaoTheme.type.display.copy(fontSize = 72.sp, letterSpacing = 2.sp),
+                color = HaoTheme.colors.ink,
             )
 
             Text(
                 text = uiState.protectionMessage,
-                modifier = Modifier.padding(top = 20.dp),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MutedText,
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
             )
 
@@ -95,15 +87,12 @@ fun ProtectedScreen(
                 visible = uiState.quoteVisible && uiState.currentQuote != null,
                 enter = fadeIn(animationSpec = tween(durationMillis = 2_000)),
                 exit = fadeOut(animationSpec = tween(durationMillis = 2_000)),
-                modifier = Modifier.padding(top = 48.dp),
+                modifier = Modifier.padding(top = HaoTheme.spacing.xxl),
             ) {
                 Text(
                     text = uiState.currentQuote.orEmpty(),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        lineHeight = 24.sp,
-                        fontStyle = FontStyle.Italic,
-                    ),
-                    color = MutedText.copy(alpha = 0.8f),
+                    style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
+                    color = HaoTheme.colors.inkSoft.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -112,15 +101,15 @@ fun ProtectedScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp, start = 32.dp, end = 32.dp),
+                .padding(bottom = HaoTheme.spacing.xl, start = HaoTheme.spacing.xl, end = HaoTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             uiState.endSessionHint?.let { hint ->
                 Text(
                     text = hint,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MutedText,
+                    modifier = Modifier.padding(bottom = HaoTheme.spacing.sm),
+                    style = HaoTheme.type.body,
+                    color = HaoTheme.colors.inkSoft,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -131,17 +120,17 @@ fun ProtectedScreen(
             ) {
                 Text(
                     text = if (uiState.isEndingSession) "Ending…" else uiState.endButtonLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Sage,
+                    style = HaoTheme.type.body,
+                    color = HaoTheme.colors.ink,
                 )
             }
 
             if (uiState.sessionMode == SessionMode.SHIELD && uiState.endSessionHint == null) {
                 Text(
                     text = "Tap your Hǎo Shield to end this session.",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MutedText.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkSoft.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -149,12 +138,12 @@ fun ProtectedScreen(
             if (uiState.sessionMode == SessionMode.SHIELD && uiState.hasQrToken) {
                 TextButton(
                     onClick = onNavigateToScanner,
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xs),
                 ) {
                     Text(
                         text = "Scan your printed Shield to end",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Sage.copy(alpha = 0.8f),
+                        style = HaoTheme.type.caption,
+                        color = HaoTheme.colors.ink.copy(alpha = 0.8f),
                     )
                 }
             }
@@ -162,12 +151,12 @@ fun ProtectedScreen(
             if (uiState.sessionMode == SessionMode.SHIELD) {
                 TextButton(
                     onClick = viewModel::onRequestEmergencyExit,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
                 ) {
                     Text(
                         text = "I don't have my Shield with me",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MutedText.copy(alpha = 0.6f),
+                        style = HaoTheme.type.caption,
+                        color = HaoTheme.colors.inkSoft.copy(alpha = 0.6f),
                     )
                 }
             }
@@ -199,10 +188,10 @@ private fun EmergencyExitPanel(
 ) {
     Column(
         modifier = modifier
-            .background(WarmBackground)
+            .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 32.dp, vertical = 24.dp),
+            .padding(horizontal = HaoTheme.spacing.xl, vertical = HaoTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -210,16 +199,16 @@ private fun EmergencyExitPanel(
             EmergencyExitStep.WRITING_NOTE -> {
                 Text(
                     text = "Ending without your Shield",
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
-                    color = Sage,
+                    style = HaoTheme.type.heading,
+                    color = HaoTheme.colors.ink,
                     textAlign = TextAlign.Center,
                 )
                 Text(
                     text = "Write what brought you here. Your session will end after a " +
                         "minute of stillness.",
-                    modifier = Modifier.padding(top = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MutedText,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.md),
+                    style = HaoTheme.type.body,
+                    color = HaoTheme.colors.inkSoft,
                     textAlign = TextAlign.Center,
                 )
                 OutlinedTextField(
@@ -227,19 +216,22 @@ private fun EmergencyExitPanel(
                     onValueChange = onNoteChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 24.dp),
+                        .padding(top = HaoTheme.spacing.lg),
                     placeholder = {
                         Text(
                             text = "A short, honest intention…",
-                            color = MutedText.copy(alpha = 0.5f),
+                            style = HaoTheme.type.body,
+                            color = HaoTheme.colors.inkSoft.copy(alpha = 0.5f),
                         )
                     },
+                    textStyle = HaoTheme.type.body,
+                    shape = HaoTheme.shapes.card,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Sage.copy(alpha = 0.6f),
-                        unfocusedBorderColor = MutedText.copy(alpha = 0.25f),
-                        cursorColor = Sage,
-                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        focusedBorderColor = HaoTheme.colors.ink.copy(alpha = 0.6f),
+                        unfocusedBorderColor = HaoTheme.colors.inkSoft.copy(alpha = 0.25f),
+                        cursorColor = HaoTheme.colors.ink,
+                        focusedTextColor = HaoTheme.colors.ink,
+                        unfocusedTextColor = HaoTheme.colors.ink,
                     ),
                     minLines = 3,
                 )
@@ -248,19 +240,19 @@ private fun EmergencyExitPanel(
                     enabled = note.isNotBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(top = HaoTheme.spacing.md),
                 ) {
                     Text(
                         text = "Continue",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (note.isNotBlank()) Sage else MutedText,
+                        style = HaoTheme.type.body,
+                        color = if (note.isNotBlank()) HaoTheme.colors.ink else HaoTheme.colors.inkSoft,
                     )
                 }
                 TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Stay in the session",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MutedText,
+                        style = HaoTheme.type.body,
+                        color = HaoTheme.colors.inkSoft,
                     )
                 }
             }
@@ -268,27 +260,24 @@ private fun EmergencyExitPanel(
             EmergencyExitStep.COUNTDOWN -> {
                 Text(
                     text = countdownSeconds.toString(),
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Light,
-                    ),
-                    color = Sage,
+                    style = HaoTheme.type.display.copy(fontSize = 72.sp),
+                    color = HaoTheme.colors.ink,
                 )
                 Text(
                     text = "Breathe. The session will end on its own.",
-                    modifier = Modifier.padding(top = 20.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MutedText,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                    style = HaoTheme.type.voice,
+                    color = HaoTheme.colors.inkSoft,
                     textAlign = TextAlign.Center,
                 )
                 TextButton(
                     onClick = onCancel,
-                    modifier = Modifier.padding(top = 32.dp),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xl),
                 ) {
                     Text(
                         text = "Cancel",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MutedText,
+                        style = HaoTheme.type.body,
+                        color = HaoTheme.colors.inkSoft,
                     )
                 }
             }
@@ -309,7 +298,7 @@ private fun AmbientMusicToggle(
         Text(
             text = if (isPlaying) "❚❚" else "♪",
             fontSize = if (isPlaying) 14.sp else 22.sp,
-            color = if (isPlaying) Sage else MutedText.copy(alpha = 0.38f),
+            color = if (isPlaying) HaoTheme.colors.ink else HaoTheme.colors.inkSoft.copy(alpha = 0.38f),
         )
     }
 }

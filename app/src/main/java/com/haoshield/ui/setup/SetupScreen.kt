@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,15 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.haoshield.ui.theme.MutedText
-import com.haoshield.ui.theme.Sage
-import com.haoshield.ui.theme.WarmBackground
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun SetupScreen(
@@ -59,7 +55,7 @@ fun SetupScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(WarmBackground)
+            .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
@@ -67,15 +63,15 @@ fun SetupScreen(
     ) {
         Text(
             text = "Prepare your Shield",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
         )
         Text(
             text = "Two gentle permissions let the Shield rest your chosen apps while a session " +
                 "is open. You stay in control — turn them off anytime.",
             modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MutedText,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -122,8 +118,8 @@ fun SetupScreen(
                     uiState.isReady -> "Begin Software session"
                     else -> "Grant both to begin"
                 },
-                style = MaterialTheme.typography.titleMedium,
-                color = if (uiState.isReady) Sage else MutedText,
+                style = HaoTheme.type.heading,
+                color = if (uiState.isReady) HaoTheme.colors.ink else HaoTheme.colors.inkSoft,
             )
         }
 
@@ -133,8 +129,8 @@ fun SetupScreen(
         ) {
             Text(
                 text = "Not now",
-                style = MaterialTheme.typography.labelLarge,
-                color = MutedText.copy(alpha = 0.8f),
+                style = HaoTheme.type.label,
+                color = HaoTheme.colors.inkSoft.copy(alpha = 0.8f),
             )
         }
     }
@@ -152,28 +148,28 @@ private fun SetupStep(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (granted) "✓" else index.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                color = Sage,
+                style = HaoTheme.type.heading,
+                color = HaoTheme.colors.ink,
             )
             Text(
                 text = title,
                 modifier = Modifier.padding(start = 12.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = Sage,
+                style = HaoTheme.type.heading,
+                color = HaoTheme.colors.ink,
             )
         }
         Text(
             text = description,
             modifier = Modifier.padding(top = 6.dp, start = 28.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
         if (granted) {
             Text(
                 text = "Enabled",
                 modifier = Modifier.padding(top = 8.dp, start = 28.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = Sage,
+                style = HaoTheme.type.label,
+                color = HaoTheme.colors.ink,
             )
         } else {
             TextButton(
@@ -182,8 +178,8 @@ private fun SetupStep(
             ) {
                 Text(
                     text = "Open settings",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Sage,
+                    style = HaoTheme.type.label,
+                    color = HaoTheme.colors.ink,
                 )
             }
         }
