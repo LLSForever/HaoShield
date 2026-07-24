@@ -110,6 +110,23 @@ fun SettingsScreen(
             modifier = Modifier.padding(top = HaoTheme.spacing.sm),
         )
 
+        // --- BLOCKING METHOD ---
+        SectionLabel("BLOCKING METHOD")
+        ToggleRow(
+            title = "Strict blocking",
+            description = if (uiState.rootAvailable) {
+                "Truly suspend blocked apps at the system level during a session — they can't open " +
+                    "at all. You'll be asked to grant root the first time a session starts. Takes " +
+                    "effect from the next session."
+            } else {
+                "Requires a rooted device. Without root, Hǎo Shield uses the calm cover-screen, " +
+                    "which a determined tap can still slip past."
+            },
+            checked = uiState.strictBlocking,
+            onCheckedChange = viewModel::onToggleStrictBlocking,
+            enabled = uiState.rootAvailable,
+        )
+
         // --- SESSION ---
         SectionLabel("SESSION")
         ToggleRow(
@@ -203,6 +220,7 @@ private fun ToggleRow(
     description: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier
@@ -212,10 +230,14 @@ private fun ToggleRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = HaoTheme.type.body, color = HaoTheme.colors.ink)
+            Text(
+                text = title,
+                style = HaoTheme.type.body,
+                color = if (enabled) HaoTheme.colors.ink else HaoTheme.colors.inkSoft,
+            )
             Text(text = description, style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 

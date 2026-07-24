@@ -1,5 +1,6 @@
 package com.haoshield.data.service
 
+import com.haoshield.data.blocking.StrictBlockingController
 import com.haoshield.data.local.PersistedSessionSnapshot
 import com.haoshield.data.local.SessionPreferencesDataStore
 import com.haoshield.di.ApplicationScope
@@ -33,6 +34,7 @@ class SessionManagerImpl @Inject constructor(
     private val sessionPreferencesDataStore: SessionPreferencesDataStore,
     private val journalRepository: JournalRepository,
     private val shieldTokenStore: ShieldTokenStore,
+    private val strictBlockingController: StrictBlockingController,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : SessionManager {
 
@@ -81,6 +83,11 @@ class SessionManagerImpl @Inject constructor(
         )
         startTimer(session.startedAtEpochMillis)
 
+        // Strict mode (rooted devices): genuinely suspend the blocked apps for this session.
+        // No-op otherwise. Runs after clearActiveSessionForReplacement() above has released any
+        // leftover suspensions, so ordering is deterministic.
+        strictBlockingController.applyForSession()
+
         return session
     }
 
@@ -119,6 +126,10 @@ class SessionManagerImpl @Inject constructor(
         val updatedPackages = current.temporarilyAllowedPackages + packageName
         sessionState.value = current.copy(temporarilyAllowedPackages = updatedPackages)
         sessionPreferencesDataStore.persistAllowedPackages(updatedPackages)
+
+        // In strict mode the app is OS-suspended — release just this one so it can actually open.
+        // Awaited (not fire-and-forget) so the app is un-suspended before the caller launches it.
+        strictBlockingController.release(packageName)
     }
 
     override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean =
@@ -133,6 +144,9 @@ class SessionManagerImpl @Inject constructor(
         if (snapshot == null) {
             sessionState.value = null
             stopTimer()
+            // If a strict session was suspended when the process was killed, release it now so the
+            // user isn't left with apps stuck suspended and no session to end.
+            strictBlockingController.releaseAll()
             return
         }
 
@@ -210,6 +224,9 @@ class SessionManagerImpl @Inject constructor(
         sessionState.value = null
         stopTimer()
         sessionPreferencesDataStore.clearSession()
+
+        // Release any strict-mode suspensions so the apps are usable again once the session ends.
+        strictBlockingController.releaseAll()
 
         return endedSession
     }

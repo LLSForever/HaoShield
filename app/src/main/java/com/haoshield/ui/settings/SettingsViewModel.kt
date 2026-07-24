@@ -2,6 +2,8 @@ package com.haoshield.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.haoshield.data.blocking.StrictBlockingController
+import com.haoshield.data.root.RootShell
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.domain.repository.BlockingRepository
@@ -27,36 +29,56 @@ data class SettingsUiState(
     val blockedGroups: List<BlockedGroupSummary> = emptyList(),
     val ambientSound: Boolean = true,
     val quotes: Boolean = true,
+    val strictBlocking: Boolean = false,
+    val rootAvailable: Boolean = false,
 ) {
     val hasAnyToken: Boolean get() = hasNfcToken || hasQrToken
 }
 
+private data class SessionToggles(
+    val ambient: Boolean,
+    val quotes: Boolean,
+    val strict: Boolean,
+)
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val strictBlockingController: StrictBlockingController,
+    rootShell: RootShell,
     shieldTokenStore: ShieldTokenStore,
     blockingRepository: BlockingRepository,
 ) : ViewModel() {
+
+    // Passive check (no su invocation, no root prompt) — just whether Strict mode can be offered.
+    private val rootAvailable: Boolean = rootShell.isRootBinaryPresent()
+
+    private val sessionToggles = combine(
+        settingsRepository.observeAmbientSoundEnabled(),
+        settingsRepository.observeQuotesEnabled(),
+        settingsRepository.observeStrictBlockingEnabled(),
+    ) { ambient, quotes, strict -> SessionToggles(ambient, quotes, strict) }
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.observeBlockingMode(),
         shieldTokenStore.observeRegisteredTokens(),
         blockingRepository.observeBlockedGroups(),
-        settingsRepository.observeAmbientSoundEnabled(),
-        settingsRepository.observeQuotesEnabled(),
-    ) { mode, tokens, groups, ambient, quotes ->
+        sessionToggles,
+    ) { mode, tokens, groups, toggles ->
         SettingsUiState(
             mode = mode,
             hasNfcToken = tokens.any { it.kind == ShieldTokenKind.NFC },
             hasQrToken = tokens.any { it.kind == ShieldTokenKind.QR },
             blockedGroups = groups.map { BlockedGroupSummary(it.displayName, it.packageNames.size) },
-            ambientSound = ambient,
-            quotes = quotes,
+            ambientSound = toggles.ambient,
+            quotes = toggles.quotes,
+            strictBlocking = toggles.strict,
+            rootAvailable = rootAvailable,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = SettingsUiState(),
+        initialValue = SettingsUiState(rootAvailable = rootAvailable),
     )
 
     fun onSelectMode(mode: BlockingMode) {
@@ -69,5 +91,17 @@ class SettingsViewModel @Inject constructor(
 
     fun onToggleQuotes(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setQuotesEnabled(enabled) }
+    }
+
+    fun onToggleStrictBlocking(enabled: Boolean) {
+        if (enabled && !rootAvailable) return
+        viewModelScope.launch {
+            settingsRepository.setStrictBlockingEnabled(enabled)
+            // If turned off while apps are suspended, release them immediately rather than waiting
+            // for the session to end.
+            if (!enabled) {
+                strictBlockingController.releaseAll()
+            }
+        }
     }
 }

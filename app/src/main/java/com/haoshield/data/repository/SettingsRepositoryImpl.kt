@@ -29,4 +29,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setQuotesEnabled(enabled: Boolean) =
         settingsPreferencesDataStore.setQuotesEnabled(enabled)
+
+    override fun observeStrictBlockingEnabled(): Flow<Boolean> =
+        settingsPreferencesDataStore.observeStrictBlockingEnabled()
+
+    override suspend fun setStrictBlockingEnabled(enabled: Boolean) =
+        settingsPreferencesDataStore.setStrictBlockingEnabled(enabled)
 }

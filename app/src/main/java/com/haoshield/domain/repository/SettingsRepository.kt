@@ -18,4 +18,8 @@ interface SettingsRepository {
     fun observeQuotesEnabled(): Flow<Boolean>
 
     suspend fun setQuotesEnabled(enabled: Boolean)
+
+    fun observeStrictBlockingEnabled(): Flow<Boolean>
+
+    suspend fun setStrictBlockingEnabled(enabled: Boolean)
 }
