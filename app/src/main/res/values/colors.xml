@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#F7F5F0</color>
+    <color name="ic_launcher_background">#F5F3ED</color>
 
-    <!-- "Calm" palette — mirrors com.haoshield.ui.theme.Color.kt. -->
-    <color name="hao_warm_background">#F7F5F0</color>
-    <color name="hao_sage">#5C6B5C</color>
-    <color name="hao_muted_text">#6B6B68</color>
+    <!-- Hǎo palette — MUST mirror com.haoshield.ui.theme.Color.kt. Keep in sync when
+         the Compose palette changes; these back the blocking overlay and window theme. -->
+    <color name="hao_paper">#F5F3ED</color>
+    <color name="hao_ink">#3E4A3D</color>
+    <color name="hao_ink_soft">#7A8377</color>
+    <color name="hao_seal">#8C4A3F</color>
 </resources>

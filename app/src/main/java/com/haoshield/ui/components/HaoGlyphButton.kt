@@ -85,12 +85,13 @@ fun HaoGlyphButton(
     )
 
     val ringColor = HaoTheme.colors.stone
+    val pulseColor = HaoTheme.colors.seal
     val glyphAlpha = if (active) 1f else breathAlpha
     val glyphScale = (if (active) 1f else breathScale) * pressScale
 
     Box(
         modifier = modifier
-            .size(200.dp)
+            .size(GLYPH_TOUCH_TARGET)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -99,7 +100,7 @@ fun HaoGlyphButton(
             .semantics { this.contentDescription = contentDescription }
             .drawBehind {
                 if (!active) return@drawBehind
-                val base = 76.dp.toPx()
+                val base = RING_RADIUS.toPx()
                 // Steady inner ring.
                 drawCircle(
                     color = ringColor,
@@ -107,10 +108,11 @@ fun HaoGlyphButton(
                     center = center,
                     style = Stroke(width = 1.dp.toPx()),
                 )
-                // Expanding, fading pulse.
-                val pulseRadius = base + pulse * 24.dp.toPx()
+                // Expanding, fading pulse — the seal of a live session, the app's one
+                // touch of red while protection is running.
+                val pulseRadius = base + pulse * PULSE_TRAVEL.toPx()
                 drawCircle(
-                    color = ringColor.copy(alpha = (1f - pulse) * 0.6f),
+                    color = pulseColor.copy(alpha = (1f - pulse) * 0.35f),
                     radius = pulseRadius,
                     center = center,
                     style = Stroke(width = 1.dp.toPx()),
@@ -130,3 +132,8 @@ fun HaoGlyphButton(
         )
     }
 }
+
+// Component-local geometry — no theme tokens exist (or should) for these.
+private val GLYPH_TOUCH_TARGET = 200.dp
+private val RING_RADIUS = 76.dp
+private val PULSE_TRAVEL = 24.dp

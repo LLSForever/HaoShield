@@ -1,7 +1,10 @@
 package com.haoshield.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +84,7 @@ fun HomeScreen(
             if (uiState.hasQrToken) {
                 TextButton(
                     onClick = viewModel::onScanPrintedShield,
-                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.md),
                 ) {
                     Text(
                         text = "Scan your printed Shield",
@@ -90,7 +93,10 @@ fun HomeScreen(
                     )
                 }
             }
-            TextButton(onClick = viewModel::onCancelAwaiting) {
+            TextButton(
+                onClick = viewModel::onCancelAwaiting,
+                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+            ) {
                 Text(
                     text = "Cancel",
                     style = HaoTheme.type.caption,
@@ -99,11 +105,15 @@ fun HomeScreen(
             }
         }
 
-        uiState.errorMessage?.let { message ->
+        AnimatedVisibility(
+            visible = uiState.errorMessage != null,
+            enter = fadeIn(animationSpec = tween(HaoMotion.STANDARD)),
+            exit = fadeOut(animationSpec = tween(HaoMotion.STANDARD)),
+        ) {
             Text(
-                text = message,
+                text = uiState.errorMessage.orEmpty(),
                 style = HaoTheme.type.caption,
-                color = HaoTheme.colors.inkSoft,
+                color = HaoTheme.colors.ink,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = HaoTheme.spacing.md),
             )

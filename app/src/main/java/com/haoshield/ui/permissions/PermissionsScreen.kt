@@ -3,6 +3,7 @@ package com.haoshield.ui.permissions
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -19,7 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -118,7 +124,7 @@ fun PermissionsScreen(
                 "this screen's App info, tap the ⋮ menu, and choose \"Allow restricted settings\" " +
                 "first.",
             style = HaoTheme.type.caption,
-            color = HaoTheme.colors.inkSoft.copy(alpha = 0.85f),
+            color = HaoTheme.colors.inkFaint,
             modifier = Modifier.padding(bottom = HaoTheme.spacing.xxl),
         )
     }
@@ -133,37 +139,66 @@ private fun PermissionRow(
     onAction: () -> Unit,
     actionEnabled: Boolean = true,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = HaoTheme.spacing.sm)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = if (granted) "✓" else "·",
-                style = HaoTheme.type.heading,
-                color = HaoTheme.colors.ink,
-            )
+    val stoneColor = HaoTheme.colors.stone
+
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = HaoTheme.spacing.sm)) {
+        Box(
+            modifier = Modifier.width(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (granted) {
+                Text(
+                    text = "✓",
+                    style = HaoTheme.type.heading,
+                    color = HaoTheme.colors.ink,
+                )
+            } else {
+                Spacer(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .drawBehind {
+                            drawCircle(
+                                color = stoneColor,
+                                radius = size.minDimension / 2f,
+                                style = Stroke(1.5.dp.toPx()),
+                            )
+                        },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(HaoTheme.spacing.md))
+
+        Column {
             Text(
                 text = title,
-                modifier = Modifier.padding(start = HaoTheme.spacing.md),
                 style = HaoTheme.type.heading,
                 color = HaoTheme.colors.ink,
             )
-        }
-        if (granted) {
-            Text(
-                text = grantedLabel,
-                modifier = Modifier.padding(top = HaoTheme.spacing.xs, start = HaoTheme.spacing.lg),
-                style = HaoTheme.type.label,
-                color = HaoTheme.colors.ink,
-            )
-        } else {
-            TextButton(
-                onClick = onAction,
-                enabled = actionEnabled,
-                modifier = Modifier.padding(start = HaoTheme.spacing.md, top = HaoTheme.spacing.xs),
-            ) {
+            if (granted) {
+                Text(
+                    text = grantedLabel,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                    style = HaoTheme.type.label,
+                    color = HaoTheme.colors.ink,
+                )
+            } else if (actionEnabled) {
+                TextButton(
+                    onClick = onAction,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                ) {
+                    Text(
+                        text = actionLabel,
+                        style = HaoTheme.type.label,
+                        color = HaoTheme.colors.ink,
+                    )
+                }
+            } else {
                 Text(
                     text = actionLabel,
-                    style = HaoTheme.type.label,
-                    color = if (actionEnabled) HaoTheme.colors.ink else HaoTheme.colors.inkSoft,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkSoft,
                 )
             }
         }

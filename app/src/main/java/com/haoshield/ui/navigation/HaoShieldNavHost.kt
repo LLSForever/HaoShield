@@ -1,11 +1,15 @@
 package com.haoshield.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.ui.guide.MakeShieldGuideScreen
@@ -26,6 +30,11 @@ fun HaoShieldNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        // Screen changes are quiet crossfades — turning a page, not pushing a card.
+        enterTransition = { fadeIn(animationSpec = tween(HaoMotion.STANDARD)) },
+        exitTransition = { fadeOut(animationSpec = tween(HaoMotion.STANDARD)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.STANDARD)) },
+        popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.STANDARD)) },
     ) {
         composable(Route.Home.path) {
             HomeScreen(
@@ -61,7 +70,14 @@ fun HaoShieldNavHost(
                 onNavigateBack = { navController.popBackStack() },
             )
         }
-        composable(Route.Protected.path) {
+        composable(
+            route = Route.Protected.path,
+            // Entering and leaving a session is the app's most meaningful transition — slower.
+            enterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            exitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+        ) {
             ProtectedScreen(
                 onNavigateHome = {
                     navController.navigate(Route.Home.path) {
@@ -75,7 +91,9 @@ fun HaoShieldNavHost(
             )
         }
         composable(Route.Journal.path) {
-            JournalScreen()
+            JournalScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(
             route = Route.Unblock.path,

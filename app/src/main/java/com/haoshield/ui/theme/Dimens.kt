@@ -39,5 +39,6 @@ object HaoMotion {
     const val QUICK = 240      // press feedback, toggles
     const val STANDARD = 450   // screen content fades, expansions
     const val SLOW = 700       // entering/leaving a session
+    const val GENTLE = 2000    // quote fades, ambient reveals
     const val BREATH = 4200    // idle glyph breathing half-cycle
 }

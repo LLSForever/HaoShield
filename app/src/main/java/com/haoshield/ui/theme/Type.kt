@@ -49,6 +49,10 @@ private val Trim = LineHeightStyle(
 data class HaoTypography(
     /** The 好 glyph itself. Size is set at the call site; this carries family only. */
     val glyph: TextStyle,
+    /** A smaller 好 for heroes, stamps, and empty states. */
+    val glyphSmall: TextStyle,
+    /** The session clock and emergency countdown digits. */
+    val timer: TextStyle,
     /** Screen titles: "Hǎo Shield", "Make Your Own Shield". */
     val display: TextStyle,
     /** Section headings within a screen. */
@@ -69,6 +73,21 @@ val DefaultHaoTypography = HaoTypography(
         fontWeight = FontWeight.Normal,
         fontSize = 96.sp,
         lineHeight = 112.sp,
+        lineHeightStyle = Trim,
+    ),
+    glyphSmall = TextStyle(
+        fontFamily = NotoSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 72.sp,
+        lineHeight = 84.sp,
+        lineHeightStyle = Trim,
+    ),
+    timer = TextStyle(
+        fontFamily = NotoSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 72.sp,
+        lineHeight = 84.sp,
+        letterSpacing = 2.sp,
         lineHeightStyle = Trim,
     ),
     display = TextStyle(

@@ -1,9 +1,17 @@
 package com.haoshield.ui.guide
 
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,8 +23,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,12 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.ScanMode
+import com.haoshield.ui.components.HaoBackLink
+import com.haoshield.ui.components.HaoPrimaryButton
+import com.haoshield.ui.components.HaoSecondaryButton
+import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 
 @Composable
@@ -44,45 +54,56 @@ fun MakeShieldGuideScreen(
     val context = LocalContext.current
     val activity = context as ComponentActivity
 
-    when (uiState.step) {
-        GuideStep.CONTENT -> GuideContentStep(
-            uiState = uiState,
-            onNavigateBack = onNavigateBack,
-            onBeginRegistration = viewModel::onBeginRegistration,
-        )
-        GuideStep.CHOOSE_METHOD -> ChooseMethodStep(
-            isGeneratingQr = uiState.isGeneratingQr,
-            onChooseNfc = viewModel::onChooseNfcMethod,
-            onChooseQr = viewModel::onChooseQrMethod,
-            onBack = viewModel::onBackToContent,
-        )
-        GuideStep.REGISTER -> {
-            DisposableEffect(Unit) {
-                viewModel.onEnterRegistrationMode(activity)
-                onDispose { viewModel.onLeaveRegistrationMode(activity) }
-            }
-            RegisterShieldStep(
+    // NFC registration mode is tied to being on the REGISTER step. Hoisted here (not inside the
+    // step content) because under Crossfade both old and new step contents compose during the
+    // transition — an effect inside the branch would race enable/disable.
+    val isRegisterStep = uiState.step == GuideStep.REGISTER
+    DisposableEffect(isRegisterStep) {
+        if (isRegisterStep) viewModel.onEnterRegistrationMode(activity)
+        onDispose {
+            if (isRegisterStep) viewModel.onLeaveRegistrationMode(activity)
+        }
+    }
+
+    Crossfade(
+        targetState = uiState.step,
+        animationSpec = tween(HaoMotion.STANDARD),
+        label = "guideStep",
+    ) { step ->
+        when (step) {
+            GuideStep.CONTENT -> GuideContentStep(
+                uiState = uiState,
+                onNavigateBack = onNavigateBack,
+                onBeginRegistration = viewModel::onBeginRegistration,
+            )
+            GuideStep.CHOOSE_METHOD -> ChooseMethodStep(
+                isGeneratingQr = uiState.isGeneratingQr,
+                onChooseNfc = viewModel::onChooseNfcMethod,
+                onChooseQr = viewModel::onChooseQrMethod,
+                onBack = viewModel::onBackToContent,
+            )
+            GuideStep.REGISTER -> RegisterShieldStep(
                 uiState = uiState,
                 onBack = viewModel::onBackToChooseMethod,
             )
+            GuideStep.QR_DISPLAY -> QrDisplayStep(
+                uiState = uiState,
+                onPrint = { uiState.qrBitmap?.let { ShieldQrPrinter.print(context, it) } },
+                onSaveImage = { uiState.qrBitmap?.let { ShieldQrSharing.share(context, it) } },
+                onConfirmScan = { onNavigateToScanner(ScanMode.REGISTRATION) },
+                onBack = viewModel::onBackToChooseMethod,
+            )
+            GuideStep.SUCCESS -> RegistrationSuccessStep(
+                onContinue = viewModel::onDismissSuccess,
+            )
         }
-        GuideStep.QR_DISPLAY -> QrDisplayStep(
-            uiState = uiState,
-            onPrint = { uiState.qrBitmap?.let { ShieldQrPrinter.print(context, it) } },
-            onSaveImage = { uiState.qrBitmap?.let { ShieldQrSharing.share(context, it) } },
-            onConfirmScan = { onNavigateToScanner(ScanMode.REGISTRATION) },
-            onBack = viewModel::onBackToChooseMethod,
-        )
-        GuideStep.SUCCESS -> RegistrationSuccessStep(
-            onContinue = viewModel::onDismissSuccess,
-        )
     }
 }
 
 @Composable
 private fun ScreenColumn(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -97,20 +118,13 @@ private fun ScreenColumn(
 }
 
 @Composable
-private fun BackLink(onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.padding(top = HaoTheme.spacing.sm)) {
-        Text(text = "Back", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
-    }
-}
-
-@Composable
 private fun GuideContentStep(
     uiState: MakeShieldGuideUiState,
     onNavigateBack: () -> Unit,
     onBeginRegistration: () -> Unit,
 ) {
     ScreenColumn {
-        BackLink(onNavigateBack)
+        HaoBackLink(onClick = onNavigateBack)
 
         // Hero.
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
@@ -120,7 +134,7 @@ private fun GuideContentStep(
         ) {
             Text(
                 text = "好",
-                style = HaoTheme.type.glyph.copy(fontSize = 72.sp),
+                style = HaoTheme.type.glyphSmall,
                 color = HaoTheme.colors.ink,
             )
             Text(
@@ -160,7 +174,7 @@ private fun GuideContentStep(
                 text = MakeShieldGuideContent.alreadyRegistered,
                 modifier = Modifier.padding(top = HaoTheme.spacing.lg),
                 style = HaoTheme.type.caption,
-                color = HaoTheme.colors.inkSoft.copy(alpha = 0.85f),
+                color = HaoTheme.colors.inkFaint,
             )
         }
 
@@ -173,9 +187,10 @@ private fun GuideContentStep(
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
 
-        FilledCta(
+        HaoPrimaryButton(
             text = if (uiState.registeredUid == null) "Register your Shield" else "Register another",
             onClick = onBeginRegistration,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
@@ -204,22 +219,6 @@ private fun NumberedStep(number: Int, title: String, body: String) {
 }
 
 @Composable
-private fun FilledCta(text: String, onClick: () -> Unit, enabled: Boolean = true) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        shape = HaoTheme.shapes.button,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = HaoTheme.colors.ink,
-            contentColor = HaoTheme.colors.paper,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text = text, style = HaoTheme.type.body, color = HaoTheme.colors.paper)
-    }
-}
-
-@Composable
 private fun ChooseMethodStep(
     isGeneratingQr: Boolean,
     onChooseNfc: () -> Unit,
@@ -227,7 +226,7 @@ private fun ChooseMethodStep(
     onBack: () -> Unit,
 ) {
     ScreenColumn {
-        BackLink(onBack)
+        HaoBackLink(onClick = onBack)
 
         Text(
             text = "Choose your Shield",
@@ -244,23 +243,19 @@ private fun ChooseMethodStep(
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
 
-        FilledCta(
+        HaoPrimaryButton(
             text = MakeShieldGuideContent.methodNfcLabel,
             onClick = onChooseNfc,
             enabled = !isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
-        TextButton(
+        HaoSecondaryButton(
+            text = if (isGeneratingQr) "Preparing…" else MakeShieldGuideContent.methodQrLabel,
             onClick = onChooseQr,
             enabled = !isGeneratingQr,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                text = if (isGeneratingQr) "Preparing…" else MakeShieldGuideContent.methodQrLabel,
-                style = HaoTheme.type.body,
-                color = HaoTheme.colors.ink,
-            )
-        }
+        )
     }
 }
 
@@ -273,7 +268,7 @@ private fun QrDisplayStep(
     onBack: () -> Unit,
 ) {
     ScreenColumn(horizontalAlignment = Alignment.CenterHorizontally) {
-        BackLink(onBack)
+        HaoBackLink(onClick = onBack, modifier = Modifier.align(Alignment.Start))
 
         Text(
             text = "Your printed Shield",
@@ -305,7 +300,11 @@ private fun QrDisplayStep(
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
 
-        FilledCta(text = "Print on A4", onClick = onPrint)
+        HaoPrimaryButton(
+            text = "Print on A4",
+            onClick = onPrint,
+            modifier = Modifier.fillMaxWidth(),
+        )
         TextButton(onClick = onSaveImage, modifier = Modifier.padding(top = HaoTheme.spacing.xs)) {
             Text(text = "Save as image", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
         }
@@ -321,7 +320,11 @@ private fun QrDisplayStep(
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
 
-        FilledCta(text = "I've printed it — scan to confirm", onClick = onConfirmScan)
+        HaoSecondaryButton(
+            text = "I've printed it — scan to confirm",
+            onClick = onConfirmScan,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
     }
@@ -333,7 +336,7 @@ private fun RegisterShieldStep(
     onBack: () -> Unit,
 ) {
     ScreenColumn {
-        BackLink(onBack)
+        HaoBackLink(onClick = onBack)
 
         Text(
             text = "Register your Shield",
@@ -363,11 +366,9 @@ private fun RegisterShieldStep(
                     style = HaoTheme.type.body,
                     color = HaoTheme.colors.ink,
                 )
-                Text(
+                WaitingBreathText(
                     text = "Waiting for your Shield…",
                     modifier = Modifier.padding(top = HaoTheme.spacing.xl),
-                    style = HaoTheme.type.caption,
-                    color = HaoTheme.colors.inkSoft.copy(alpha = 0.8f),
                 )
             }
         }
@@ -383,13 +384,42 @@ private fun RegisterShieldStep(
     }
 }
 
+/** A caption that slowly breathes — the visual signal that the app is listening, live. */
+@Composable
+private fun WaitingBreathText(text: String, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "waiting")
+    val breathAlpha by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(HaoMotion.BREATH, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "breathAlpha",
+    )
+    Text(
+        text = text,
+        modifier = modifier.graphicsLayer { alpha = breathAlpha },
+        style = HaoTheme.type.caption,
+        color = HaoTheme.colors.inkSoft,
+    )
+}
+
 @Composable
 private fun RegistrationSuccessStep(onContinue: () -> Unit) {
     ScreenColumn {
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xxl))
 
+        // The seal: registration is stamped.
+        Text(
+            text = "好",
+            style = HaoTheme.type.glyphSmall,
+            color = HaoTheme.colors.seal,
+        )
+
         Text(
             text = MakeShieldGuideContent.registerSuccess,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
             style = HaoTheme.type.display,
             color = HaoTheme.colors.ink,
         )
@@ -402,6 +432,10 @@ private fun RegistrationSuccessStep(onContinue: () -> Unit) {
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
 
-        FilledCta(text = "Continue", onClick = onContinue)
+        HaoPrimaryButton(
+            text = "Continue",
+            onClick = onContinue,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }

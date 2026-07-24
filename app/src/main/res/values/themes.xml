@@ -7,7 +7,7 @@
       white flash before the first frame draws.
     -->
     <style name="Theme.HaoShield" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/hao_warm_background</item>
+        <item name="android:windowBackground">@color/hao_paper</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

@@ -34,6 +34,9 @@ data class HaoColors(
 
     /** Text colour for the muted register: subtitles, captions, hints. */
     val onPaperMuted: Color get() = inkSoft
+
+    /** Tertiary register: hints, placeholders, disabled text. Derived, not a sixth colour. */
+    val inkFaint: Color get() = inkSoft.copy(alpha = 0.62f)
 }
 
 val LightHaoColors = HaoColors(

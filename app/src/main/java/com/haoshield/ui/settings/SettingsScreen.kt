@@ -1,5 +1,11 @@
 package com.haoshield.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,9 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.ui.components.HaoBackLink
+import com.haoshield.ui.components.HaoSectionLabel
+import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 
 @Composable
@@ -47,12 +56,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = HaoTheme.spacing.screenH),
     ) {
-        TextButton(
-            onClick = onNavigateBack,
-            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-        ) {
-            Text(text = "Back", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
-        }
+        HaoBackLink(onClick = onNavigateBack)
 
         Text(
             text = "Settings",
@@ -62,7 +66,7 @@ fun SettingsScreen(
         )
 
         // --- MODE ---
-        SectionLabel("MODE")
+        HaoSectionLabel("MODE")
         ModeRow(
             title = "Software Mode",
             description = "A lighter way to begin",
@@ -70,12 +74,18 @@ fun SettingsScreen(
             onClick = { viewModel.onSelectMode(BlockingMode.SOFTWARE) },
         )
         ModeRow(
-            title = "Hǎo Shield Mode",
+            title = "Shield Mode",
             description = "Tap or scan your Shield to begin",
             selected = uiState.mode == BlockingMode.SHIELD,
             onClick = { viewModel.onSelectMode(BlockingMode.SHIELD) },
         )
-        if (uiState.mode == BlockingMode.SHIELD) {
+        AnimatedVisibility(
+            visible = uiState.mode == BlockingMode.SHIELD,
+            enter = fadeIn(animationSpec = tween(HaoMotion.STANDARD)) +
+                expandVertically(animationSpec = tween(HaoMotion.STANDARD)),
+            exit = fadeOut(animationSpec = tween(HaoMotion.STANDARD)) +
+                shrinkVertically(animationSpec = tween(HaoMotion.STANDARD)),
+        ) {
             TextButton(
                 onClick = onNavigateToGuide,
                 modifier = Modifier.padding(start = HaoTheme.spacing.xl),
@@ -96,7 +106,7 @@ fun SettingsScreen(
         }
 
         // --- BLOCKED APPS ---
-        SectionLabel("BLOCKED APPS")
+        HaoSectionLabel("BLOCKED APPS", topDivider = true)
         uiState.blockedGroups.forEach { group ->
             InfoRow(
                 title = group.name,
@@ -104,14 +114,14 @@ fun SettingsScreen(
             )
         }
         Text(
-            text = "Editing these groups is coming soon.",
+            text = "Editing groups is coming soon.",
             style = HaoTheme.type.caption,
-            color = HaoTheme.colors.inkSoft.copy(alpha = 0.8f),
+            color = HaoTheme.colors.inkFaint,
             modifier = Modifier.padding(top = HaoTheme.spacing.sm),
         )
 
         // --- BLOCKING METHOD ---
-        SectionLabel("BLOCKING METHOD")
+        HaoSectionLabel("BLOCKING METHOD", topDivider = true)
         ToggleRow(
             title = "Strict blocking",
             description = if (uiState.rootAvailable) {
@@ -128,7 +138,7 @@ fun SettingsScreen(
         )
 
         // --- SESSION ---
-        SectionLabel("SESSION")
+        HaoSectionLabel("SESSION", topDivider = true)
         ToggleRow(
             title = "Ambient sound",
             description = "Soft background tones during a session",
@@ -143,22 +153,12 @@ fun SettingsScreen(
         )
 
         // --- ABOUT ---
-        SectionLabel("ABOUT")
+        HaoSectionLabel("ABOUT", topDivider = true)
         LinkRow(title = "Make Your Own Shield", onClick = onNavigateToGuide)
         LinkRow(title = "Permissions", onClick = onNavigateToPermissions)
 
         Spacer(modifier = Modifier.padding(bottom = HaoTheme.spacing.xxl))
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = HaoTheme.type.label,
-        color = HaoTheme.colors.inkSoft,
-        modifier = Modifier.padding(top = HaoTheme.spacing.xl, bottom = HaoTheme.spacing.sm),
-    )
 }
 
 @Composable
@@ -237,7 +237,19 @@ private fun ToggleRow(
             )
             Text(text = description, style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+            // Quieted to the palette so it doesn't shout "Material" next to the bespoke radios.
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = HaoTheme.colors.ink,
+                checkedThumbColor = HaoTheme.colors.paper,
+                uncheckedTrackColor = HaoTheme.colors.stone,
+                uncheckedThumbColor = HaoTheme.colors.paperRaised,
+                uncheckedBorderColor = HaoTheme.colors.inkSoft,
+            ),
+        )
     }
 }
 
@@ -247,7 +259,7 @@ private fun LinkRow(title: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = HaoTheme.spacing.md),
+            .padding(vertical = HaoTheme.spacing.sm),
     ) {
         Text(text = title, style = HaoTheme.type.body, color = HaoTheme.colors.ink)
     }
