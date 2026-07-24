@@ -1,6 +1,7 @@
 package com.haoshield.domain.repository
 
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.domain.model.ThemePreference
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,4 +23,8 @@ interface SettingsRepository {
     fun observeStrictBlockingEnabled(): Flow<Boolean>
 
     suspend fun setStrictBlockingEnabled(enabled: Boolean)
+
+    fun observeThemePreference(): Flow<ThemePreference>
+
+    suspend fun setThemePreference(preference: ThemePreference)
 }

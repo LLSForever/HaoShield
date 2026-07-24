@@ -6,6 +6,7 @@ import com.haoshield.data.blocking.StrictBlockingController
 import com.haoshield.data.root.RootShell
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ShieldTokenKind
+import com.haoshield.domain.model.ThemePreference
 import com.haoshield.domain.repository.BlockingRepository
 import com.haoshield.domain.repository.SettingsRepository
 import com.haoshield.domain.service.ShieldTokenStore
@@ -31,6 +32,7 @@ data class SettingsUiState(
     val quotes: Boolean = true,
     val strictBlocking: Boolean = false,
     val rootAvailable: Boolean = false,
+    val theme: ThemePreference = ThemePreference.SYSTEM,
 ) {
     val hasAnyToken: Boolean get() = hasNfcToken || hasQrToken
 }
@@ -39,6 +41,7 @@ private data class SessionToggles(
     val ambient: Boolean,
     val quotes: Boolean,
     val strict: Boolean,
+    val theme: ThemePreference,
 )
 
 @HiltViewModel
@@ -57,7 +60,8 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.observeAmbientSoundEnabled(),
         settingsRepository.observeQuotesEnabled(),
         settingsRepository.observeStrictBlockingEnabled(),
-    ) { ambient, quotes, strict -> SessionToggles(ambient, quotes, strict) }
+        settingsRepository.observeThemePreference(),
+    ) { ambient, quotes, strict, theme -> SessionToggles(ambient, quotes, strict, theme) }
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.observeBlockingMode(),
@@ -74,6 +78,7 @@ class SettingsViewModel @Inject constructor(
             quotes = toggles.quotes,
             strictBlocking = toggles.strict,
             rootAvailable = rootAvailable,
+            theme = toggles.theme,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -91,6 +96,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onToggleQuotes(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setQuotesEnabled(enabled) }
+    }
+
+    fun onSelectTheme(preference: ThemePreference) {
+        viewModelScope.launch { settingsRepository.setThemePreference(preference) }
     }
 
     fun onToggleStrictBlocking(enabled: Boolean) {

@@ -2,6 +2,7 @@ package com.haoshield.data.repository
 
 import com.haoshield.data.local.SettingsPreferencesDataStore
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.domain.model.ThemePreference
 import com.haoshield.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -35,4 +36,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setStrictBlockingEnabled(enabled: Boolean) =
         settingsPreferencesDataStore.setStrictBlockingEnabled(enabled)
+
+    override fun observeThemePreference(): Flow<ThemePreference> =
+        settingsPreferencesDataStore.observeThemePreference()
+
+    override suspend fun setThemePreference(preference: ThemePreference) =
+        settingsPreferencesDataStore.setThemePreference(preference)
 }

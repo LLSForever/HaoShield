@@ -20,6 +20,16 @@ private val InkSoft     = Color(0xFF7A8377) // secondary text, subtitles
 private val Stone       = Color(0xFFE5E0D6) // callout panels, dividers, inactive
 private val SealRed     = Color(0xFF8C4A3F) // single accent — at most once per screen
 
+// Dark ("dusk") palette. Not an inversion: the ground is a warm near-black with green
+// in it, and the ink is the same green lifted until it reads — lamplight on paper,
+// not a black screen with white text. Never pure #000 or #FFF.
+private val Dusk         = Color(0xFF1F231E) // warm near-black ground
+private val DuskRaised   = Color(0xFF262B24) // sheets, panels — barely lighter
+private val InkLifted    = Color(0xFFA8B5A5) // primary text, the 好 glyph
+private val InkLiftedSoft= Color(0xFF7C8A79) // secondary text, subtitles
+private val StoneDark    = Color(0xFF333A31) // callout panels, dividers, inactive
+private val SealRedLifted= Color(0xFFC0705C) // the accent, warmed so it carries on dusk
+
 @Immutable
 data class HaoColors(
     val paper: Color,
@@ -49,8 +59,17 @@ val LightHaoColors = HaoColors(
 )
 
 /**
- * Dark theme is deliberately deferred. A calm, paper-like light surface is
- * part of the app's argument. If it is added later, it should be a warm
- * near-black (#1F231E) with the same green ink lifted to ~#A8B5A5 — not an
- * inversion of these values.
+ * The same five roles at dusk. Kept as a parallel set rather than a computed
+ * inversion so each value can be judged by eye against the others.
+ *
+ * If this palette changes, mirror it in res/values-night/colors.xml — those
+ * back the blocking overlay, which is a plain View layout and cannot read these.
  */
+val DarkHaoColors = HaoColors(
+    paper = Dusk,
+    paperRaised = DuskRaised,
+    ink = InkLifted,
+    inkSoft = InkLiftedSoft,
+    stone = StoneDark,
+    seal = SealRedLifted,
+)

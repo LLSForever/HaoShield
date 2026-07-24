@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.domain.model.ThemePreference
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -93,8 +94,29 @@ class SettingsPreferencesDataStore @Inject constructor(
         }
     }
 
+    // --- Appearance ---
+
+    fun observeThemePreference(): Flow<ThemePreference> =
+        dataStore.data.map { preferences -> preferences.readTheme() }
+
+    suspend fun getThemePreference(): ThemePreference =
+        dataStore.data.first().readTheme()
+
+    suspend fun setThemePreference(preference: ThemePreference) {
+        dataStore.edit { preferences ->
+            preferences[Keys.THEME] = preference.name
+        }
+    }
+
+    private fun Preferences.readTheme(): ThemePreference = when (this[Keys.THEME]) {
+        ThemePreference.LIGHT.name -> ThemePreference.LIGHT
+        ThemePreference.DARK.name -> ThemePreference.DARK
+        else -> ThemePreference.SYSTEM
+    }
+
     private object Keys {
         val BLOCKING_MODE = stringPreferencesKey("blocking_mode")
+        val THEME = stringPreferencesKey("theme_preference")
         val AMBIENT_SOUND = booleanPreferencesKey("ambient_sound_enabled")
         val QUOTES = booleanPreferencesKey("quotes_enabled")
         val STRICT_BLOCKING = booleanPreferencesKey("strict_blocking_enabled")

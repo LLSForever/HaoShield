@@ -55,6 +55,7 @@ import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
+import com.haoshield.ui.theme.LightHaoColors
 
 @Composable
 fun QrScannerScreen(
@@ -208,7 +209,9 @@ private fun CameraPreview(
         ),
         label = "reticleAlpha",
     )
-    val reticleColor = HaoTheme.colors.paper
+    // Deliberately the light paper in BOTH themes: this sits over a camera image, not over the
+    // app's ground, so it must stay legible when the rest of the app is at dusk.
+    val reticleColor = LightHaoColors.paper
 
     Box(modifier = modifier) {
         AndroidView(

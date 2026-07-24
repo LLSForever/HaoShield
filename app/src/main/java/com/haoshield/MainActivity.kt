@@ -1,10 +1,13 @@
 package com.haoshield
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -16,9 +19,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
+import com.haoshield.domain.model.ThemePreference
+import com.haoshield.domain.repository.SettingsRepository
 import com.haoshield.domain.service.NfcManager
 import com.haoshield.domain.service.ShieldScanHandler
 import com.haoshield.ui.navigation.HaoShieldNavHost
@@ -34,6 +40,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var shieldScanHandler: ShieldScanHandler
 
+    @Inject lateinit var settingsRepository: SettingsRepository
+
     // Set when the blocking overlay asks us to open the unblock screen for a specific app.
     private val pendingUnblockPackage = mutableStateOf<String?>(null)
 
@@ -42,7 +50,26 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         pendingUnblockPackage.value = intent?.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
         setContent {
-            HaoTheme {
+            val themePreference by settingsRepository.observeThemePreference()
+                .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
+            val systemDark = isSystemInDarkTheme()
+            val dark = when (themePreference) {
+                ThemePreference.SYSTEM -> systemDark
+                ThemePreference.LIGHT -> false
+                ThemePreference.DARK -> true
+            }
+
+            // Keep the system bar icons legible against whichever ground is showing.
+            LaunchedEffect(dark) {
+                val style = if (dark) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+            }
+
+            HaoTheme(dark = dark) {
                 val navController = rememberNavController()
                 val snackbarHostState = remember { SnackbarHostState() }
 

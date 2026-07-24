@@ -7,6 +7,7 @@ import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,39 +59,65 @@ private val QuietRipple = RippleConfiguration(
 )
 
 /** M3 scheme derived from the Hǎo palette so stock components don't jar. */
-private fun materialSchemeFrom(c: HaoColors) = lightColorScheme(
-    primary = c.ink,
-    onPrimary = c.paper,
-    secondary = c.inkSoft,
-    onSecondary = c.paper,
-    tertiary = c.seal,
-    onTertiary = c.paper,
-    background = c.paper,
-    onBackground = c.ink,
-    surface = c.paper,
-    onSurface = c.ink,
-    surfaceVariant = c.stone,
-    onSurfaceVariant = c.inkSoft,
-    outline = c.stone,
-    outlineVariant = c.stone,
-    error = c.seal,
-    onError = c.paper,
-)
+private fun materialSchemeFrom(c: HaoColors, dark: Boolean) = if (dark) {
+    darkColorScheme(
+        primary = c.ink,
+        onPrimary = c.paper,
+        secondary = c.inkSoft,
+        onSecondary = c.paper,
+        tertiary = c.seal,
+        onTertiary = c.paper,
+        background = c.paper,
+        onBackground = c.ink,
+        surface = c.paper,
+        onSurface = c.ink,
+        surfaceVariant = c.stone,
+        onSurfaceVariant = c.inkSoft,
+        outline = c.stone,
+        outlineVariant = c.stone,
+        error = c.seal,
+        onError = c.paper,
+    )
+} else {
+    lightColorScheme(
+        primary = c.ink,
+        onPrimary = c.paper,
+        secondary = c.inkSoft,
+        onSecondary = c.paper,
+        tertiary = c.seal,
+        onTertiary = c.paper,
+        background = c.paper,
+        onBackground = c.ink,
+        surface = c.paper,
+        onSurface = c.ink,
+        surfaceVariant = c.stone,
+        onSurfaceVariant = c.inkSoft,
+        outline = c.stone,
+        outlineVariant = c.stone,
+        error = c.seal,
+        onError = c.paper,
+    )
+}
+
+/** True when the dusk palette is in use — for system-bar icon appearance, etc. */
+val LocalHaoIsDark = staticCompositionLocalOf { false }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HaoTheme(
-    colors: HaoColors = LightHaoColors,
+    dark: Boolean = false,
+    colors: HaoColors = if (dark) DarkHaoColors else LightHaoColors,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalHaoColors provides colors,
+        LocalHaoIsDark provides dark,
         LocalHaoTypography provides DefaultHaoTypography,
         LocalHaoSpacing provides HaoSpacing(),
         LocalHaoShapes provides HaoShapes(),
         LocalRippleConfiguration provides QuietRipple,
     ) {
-        MaterialTheme(colorScheme = materialSchemeFrom(colors)) {
+        MaterialTheme(colorScheme = materialSchemeFrom(colors, dark)) {
             Surface(
                 modifier = Modifier
                     .fillMaxSize()

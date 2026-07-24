@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.domain.model.ThemePreference
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoSectionLabel
 import com.haoshield.ui.theme.HaoMotion
@@ -150,6 +151,27 @@ fun SettingsScreen(
             description = "Occasional words to return to",
             checked = uiState.quotes,
             onCheckedChange = viewModel::onToggleQuotes,
+        )
+
+        // --- APPEARANCE ---
+        HaoSectionLabel("APPEARANCE", topDivider = true)
+        ModeRow(
+            title = "Follow system",
+            description = "Match your device's light or dark setting",
+            selected = uiState.theme == ThemePreference.SYSTEM,
+            onClick = { viewModel.onSelectTheme(ThemePreference.SYSTEM) },
+        )
+        ModeRow(
+            title = "Paper",
+            description = "Warm off-white, always",
+            selected = uiState.theme == ThemePreference.LIGHT,
+            onClick = { viewModel.onSelectTheme(ThemePreference.LIGHT) },
+        )
+        ModeRow(
+            title = "Dusk",
+            description = "Warm near-black, always",
+            selected = uiState.theme == ThemePreference.DARK,
+            onClick = { viewModel.onSelectTheme(ThemePreference.DARK) },
         )
 
         // --- ABOUT ---

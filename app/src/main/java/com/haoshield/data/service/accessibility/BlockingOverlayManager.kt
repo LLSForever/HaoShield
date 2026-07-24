@@ -1,6 +1,7 @@
 package com.haoshield.data.service.accessibility
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.provider.Settings
 import android.view.Gravity
@@ -9,13 +10,20 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import com.haoshield.R
+import com.haoshield.data.local.SettingsPreferencesDataStore
+import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.model.ThemePreference
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class BlockingOverlayManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    settingsPreferencesDataStore: SettingsPreferencesDataStore,
+    @ApplicationScope applicationScope: CoroutineScope,
 ) {
     private val windowManager: WindowManager =
         context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -23,10 +31,21 @@ class BlockingOverlayManager @Inject constructor(
     // Whether the cached view is currently attached to the window manager.
     private var attached: Boolean = false
 
-    // The overlay view is inflated once and reused. Re-inflating on every block added latency to the
-    // moment the boundary appears, widening the brief flash of the app underneath.
-    private val overlayView: View by lazy {
-        LayoutInflater.from(context).inflate(R.layout.view_blocking_overlay, null)
+    // The overlay is inflated once and reused — re-inflating on every block added latency to the
+    // moment the boundary appears, widening the flash of the app underneath. It is only rebuilt
+    // when the resolved light/dark ground changes.
+    private var overlayView: View? = null
+    private var overlayIsDark: Boolean? = null
+
+    // The user's appearance choice, mirrored here so show() stays synchronous.
+    @Volatile private var themePreference: ThemePreference = ThemePreference.SYSTEM
+
+    init {
+        applicationScope.launch {
+            settingsPreferencesDataStore.observeThemePreference().collect { preference ->
+                themePreference = preference
+            }
+        }
     }
 
     private val overlayParams: WindowManager.LayoutParams by lazy {
@@ -55,19 +74,52 @@ class BlockingOverlayManager @Inject constructor(
     ) {
         if (!canDrawOverlay() || attached) return
 
+        val view = viewFor(dark = resolveDark())
+
         // Rewire the actions each time — the callbacks close over the current blocked package.
-        overlayView.findViewById<TextView>(R.id.overlay_unblock_action)
+        view.findViewById<TextView>(R.id.overlay_unblock_action)
             .setOnClickListener { onUnblock() }
-        overlayView.findViewById<TextView>(R.id.overlay_step_away_action)
+        view.findViewById<TextView>(R.id.overlay_step_away_action)
             .setOnClickListener { onStepAway() }
 
-        runCatching { windowManager.addView(overlayView, overlayParams) }
+        runCatching { windowManager.addView(view, overlayParams) }
             .onSuccess { attached = true }
     }
 
     fun hide() {
         if (!attached) return
-        runCatching { windowManager.removeView(overlayView) }
+        overlayView?.let { view -> runCatching { windowManager.removeView(view) } }
         attached = false
+    }
+
+    /**
+     * The overlay lives in its own window, so it does not inherit the app's in-process theme
+     * choice — it would otherwise always follow the system. Inflating from a configuration-
+     * overridden context makes values-night resolve to what the user actually picked.
+     */
+    private fun viewFor(dark: Boolean): View {
+        overlayView?.let { cached ->
+            if (overlayIsDark == dark) return cached
+        }
+
+        val configuration = Configuration(context.resources.configuration).apply {
+            uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+        }
+        val themedContext = context.createConfigurationContext(configuration)
+        val view = LayoutInflater.from(themedContext)
+            .inflate(R.layout.view_blocking_overlay, null)
+
+        overlayView = view
+        overlayIsDark = dark
+        return view
+    }
+
+    private fun resolveDark(): Boolean = when (themePreference) {
+        ThemePreference.LIGHT -> false
+        ThemePreference.DARK -> true
+        ThemePreference.SYSTEM ->
+            (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
     }
 }
