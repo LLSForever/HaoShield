@@ -30,51 +30,88 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         AccessibilityAppBlockingService.setRunning(true)
     }
 
+    // The package the boundary is currently covering, so we don't churn show/hide on every event.
+    @Volatile private var coveredPackage: String? = null
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        val type = event.eventType
+        if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            type != AccessibilityEvent.TYPE_WINDOWS_CHANGED
+        ) {
+            return
+        }
 
-        val packageName = event.packageName?.toString() ?: return
-        // Ignore our own windows (including the protected overlay) so the boundary never dismisses
-        // itself when the overlay or the unblock screen appears.
-        if (packageName == applicationContext.packageName) return
+        val packageName = resolveForegroundPackage(event) ?: return
 
         serviceScope.launch {
             handleForegroundPackage(packageName)
         }
     }
 
+    /**
+     * The real foreground app. [AccessibilityEvent.getPackageName] is reliable for
+     * TYPE_WINDOW_STATE_CHANGED but is often null for TYPE_WINDOWS_CHANGED (which is what fires when
+     * you return to an already-running app via the recents switcher), so we fall back to the active
+     * window's package there.
+     */
+    private fun resolveForegroundPackage(event: AccessibilityEvent): String? {
+        val fromEvent = event.packageName?.toString()
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            !fromEvent.isNullOrBlank()
+        ) {
+            return fromEvent
+        }
+        return runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
+            ?: fromEvent
+    }
+
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
-        overlayManager.hide()
+        hideBoundary()
         AccessibilityAppBlockingService.setRunning(false)
         serviceScope.cancel()
         super.onDestroy()
     }
 
     private suspend fun handleForegroundPackage(packageName: String) {
-        if (!blockingPolicy.shouldBlock(packageName)) {
-            overlayManager.hide()
-            return
+        when {
+            // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
+            packageName == applicationContext.packageName -> return
+            // Recents / notification shade / transient system windows: keep the boundary up so a
+            // blocked app isn't exposed underneath. Tearing it down here is how the app-switch
+            // escape happened — the overlay vanished and never re-appeared on return.
+            packageName in TRANSIENT_SYSTEM_PACKAGES -> return
+            blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName)
+            // Launcher or an allowed app: the user has genuinely left the blocked app.
+            else -> hideBoundary()
         }
+    }
 
+    private fun showBoundary(packageName: String) {
         if (!overlayManager.canDrawOverlay()) {
             // Without overlay permission we can't show the calm screen; at least step the user away.
             performGlobalAction(GLOBAL_ACTION_HOME)
             return
         }
 
+        coveredPackage = packageName
         overlayManager.show(
             onUnblock = {
-                overlayManager.hide()
+                hideBoundary()
                 launchUnblock(packageName)
             },
             onStepAway = {
-                overlayManager.hide()
+                hideBoundary()
                 performGlobalAction(GLOBAL_ACTION_HOME)
             },
         )
+    }
+
+    private fun hideBoundary() {
+        coveredPackage = null
+        overlayManager.hide()
     }
 
     private fun launchUnblock(packageName: String) {
@@ -86,6 +123,13 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     }
 
     companion object {
+        // Windows that appear during transitions (recents, notification shade, status bar). Landing
+        // on one must NOT dismiss the boundary, or the blocked app underneath becomes reachable.
+        private val TRANSIENT_SYSTEM_PACKAGES = setOf(
+            "com.android.systemui",
+            "android",
+        )
+
         fun isServiceEnabled(context: Context): Boolean {
             val enabledServices = Settings.Secure.getString(
                 context.contentResolver,
