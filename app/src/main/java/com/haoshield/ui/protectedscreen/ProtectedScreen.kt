@@ -37,6 +37,7 @@ import com.haoshield.ui.theme.HaoTheme
 @Composable
 fun ProtectedScreen(
     onNavigateHome: () -> Unit,
+    onNavigateToReflection: () -> Unit,
     onNavigateToScanner: () -> Unit,
     viewModel: ProtectedScreenViewModel = hiltViewModel(),
 ) {
@@ -46,6 +47,7 @@ fun ProtectedScreen(
         viewModel.events.collect { event ->
             when (event) {
                 ProtectedScreenEvent.NavigateHome -> onNavigateHome()
+                ProtectedScreenEvent.NavigateToReflection -> onNavigateToReflection()
             }
         }
     }
@@ -84,6 +86,42 @@ fun ProtectedScreen(
                 color = HaoTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
             )
+
+            // A gentle, ignorable invitation to name what this time is for. Fades away once set,
+            // dismissed, or after the early window passes.
+            AnimatedVisibility(
+                visible = uiState.showIntentionPrompt,
+                enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
+                exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.STANDARD)),
+                modifier = Modifier.padding(top = HaoTheme.spacing.xl),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "What is this time for?",
+                        style = HaoTheme.type.caption,
+                        color = HaoTheme.colors.inkFaint,
+                    )
+                    HaoTextField(
+                        value = uiState.intentionDraft,
+                        onValueChange = viewModel::onIntentionDraftChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = HaoTheme.spacing.sm),
+                        placeholder = "A few words, if you like",
+                        minLines = 1,
+                    )
+                    TextButton(
+                        onClick = viewModel::onSubmitIntention,
+                        modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                    ) {
+                        Text(
+                            text = "Keep",
+                            style = HaoTheme.type.caption,
+                            color = HaoTheme.colors.ink,
+                        )
+                    }
+                }
+            }
 
             AnimatedVisibility(
                 visible = uiState.quoteVisible && uiState.currentQuote != null,

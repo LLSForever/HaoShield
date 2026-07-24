@@ -16,6 +16,8 @@ sealed class Route(val path: String) {
 
     data object Protected : Route("protected")
 
+    data object Reflection : Route("reflection")
+
     data object Journal : Route("journal")
 
     data object Unblock : Route("unblock/{packageName}") {

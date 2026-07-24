@@ -1,5 +1,6 @@
 package com.haoshield.domain.service
 
+import com.haoshield.domain.model.EndedSessionSummary
 import com.haoshield.domain.model.Session
 import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionEndResult
@@ -39,6 +40,15 @@ interface SessionManager {
 
     /** Epoch millis at which [packageName]'s temporary allowance expires, or null if not allowed. */
     suspend fun getTemporaryAllowanceExpiry(packageName: String): Long?
+
+    /** Record (or replace) the intention for the current session. No-op if none is active. */
+    suspend fun setSessionIntention(intention: String)
+
+    /** The just-ended session awaiting reflection, or null (also null for emergency exits). */
+    fun getLastEndedSession(): EndedSessionSummary?
+
+    /** Clear the pending reflection summary once the reflection screen has consumed it. */
+    fun clearLastEndedSession()
 
     suspend fun restorePersistedSession()
 

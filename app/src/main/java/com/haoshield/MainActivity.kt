@@ -109,8 +109,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             is ShieldScanResult.SessionEnded -> {
-                                navController.navigate(Route.Home.path) {
-                                    popUpTo(Route.Home.path) { inclusive = true }
+                                // Ending offers a brief reflection, which then returns Home.
+                                navController.navigate(Route.Reflection.path) {
+                                    popUpTo(Route.Home.path) { inclusive = false }
                                     launchSingleTop = true
                                 }
                             }

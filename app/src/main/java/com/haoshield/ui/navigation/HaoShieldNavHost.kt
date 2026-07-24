@@ -19,6 +19,7 @@ import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
 import com.haoshield.ui.permissions.PermissionsScreen
 import com.haoshield.ui.protectedscreen.ProtectedScreen
+import com.haoshield.ui.reflection.ReflectionScreen
 import com.haoshield.ui.scanner.QrScannerScreen
 import com.haoshield.ui.settings.SettingsScreen
 import com.haoshield.ui.setup.SetupScreen
@@ -102,8 +103,30 @@ fun HaoShieldNavHost(
                         launchSingleTop = true
                     }
                 },
+                onNavigateToReflection = {
+                    navController.navigate(Route.Reflection.path) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToScanner = {
                     navController.navigate(Route.QrScanner.createRoute(ScanMode.SESSION))
+                },
+            )
+        }
+        composable(
+            route = Route.Reflection.path,
+            enterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            exitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+        ) {
+            ReflectionScreen(
+                onDone = {
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.Home.path) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
             )
         }

@@ -26,6 +26,8 @@ data class PersistedSessionSnapshot(
     val temporarilyAllowedPackages: Map<String, Long>,
 )
 
+private const val NO_INTENTION = ""
+
 @Singleton
 class SessionPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -47,6 +49,7 @@ class SessionPreferencesDataStore @Inject constructor(
                     mode = mode,
                     startedAtEpochMillis = preferences[Keys.STARTED_AT] ?: return@map null,
                     isActive = true,
+                    intention = preferences[Keys.INTENTION]?.takeIf { it != NO_INTENTION },
                 ),
                 temporarilyAllowedPackages = preferences[Keys.ALLOWED_PACKAGES]
                     .orEmpty()
@@ -64,6 +67,15 @@ class SessionPreferencesDataStore @Inject constructor(
             preferences[Keys.MODE] = session.mode.name
             preferences[Keys.STARTED_AT] = session.startedAtEpochMillis
             preferences[Keys.ALLOWED_PACKAGES] = temporarilyAllowedPackages.encodeAllowances()
+            preferences[Keys.INTENTION] = session.intention ?: NO_INTENTION
+        }
+    }
+
+    suspend fun persistIntention(intention: String) {
+        dataStore.edit { preferences ->
+            if (preferences[Keys.IS_ACTIVE] == true) {
+                preferences[Keys.INTENTION] = intention
+            }
         }
     }
 
@@ -97,6 +109,7 @@ class SessionPreferencesDataStore @Inject constructor(
             preferences.remove(Keys.MODE)
             preferences.remove(Keys.STARTED_AT)
             preferences.remove(Keys.ALLOWED_PACKAGES)
+            preferences.remove(Keys.INTENTION)
         }
     }
 
@@ -106,6 +119,7 @@ class SessionPreferencesDataStore @Inject constructor(
         val MODE = stringPreferencesKey("session_mode")
         val STARTED_AT = longPreferencesKey("session_started_at")
         val ALLOWED_PACKAGES = stringSetPreferencesKey("allowed_packages")
+        val INTENTION = stringPreferencesKey("session_intention")
     }
 
     private companion object {

@@ -6,6 +6,8 @@ data class Session(
     val startedAtEpochMillis: Long,
     val endedAtEpochMillis: Long? = null,
     val isActive: Boolean = true,
+    /** What the person set this protected time aside for. Optional, offered gently after start. */
+    val intention: String? = null,
 ) {
     val isShieldMode: Boolean
         get() = mode == SessionMode.SHIELD

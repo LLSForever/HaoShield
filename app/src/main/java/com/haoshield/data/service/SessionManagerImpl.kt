@@ -4,6 +4,7 @@ import com.haoshield.data.blocking.StrictBlockingController
 import com.haoshield.data.local.PersistedSessionSnapshot
 import com.haoshield.data.local.SessionPreferencesDataStore
 import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.model.EndedSessionSummary
 import com.haoshield.domain.model.JournalEntry
 import com.haoshield.domain.model.JournalEntryType
 import com.haoshield.domain.model.Session
@@ -43,6 +44,10 @@ class SessionManagerImpl @Inject constructor(
     private val sessionState = MutableStateFlow<SessionState?>(null)
     private var timerJob: Job? = null
 
+    // The most recently ended session, held for the reflection screen to consume. Null for
+    // emergency exits (which already captured a note).
+    @Volatile private var lastEndedSession: EndedSessionSummary? = null
+
     // Completed once the persisted session has been restored after process start. Blocking checks
     // await this so a blocked app opened during the restore window isn't briefly let through.
     private val restored = CompletableDeferred<Unit>()
@@ -71,7 +76,10 @@ class SessionManagerImpl @Inject constructor(
     override suspend fun getActiveSession(): Session? = sessionState.value?.session
 
     override suspend fun startSession(mode: SessionMode): Session {
-        clearActiveSessionForReplacement()
+        // Replacing any prior session doesn't offer a reflection, and a fresh start clears any
+        // pending one so a new session's end doesn't surface a stale prompt.
+        clearActiveSessionForReplacement(recordForReflection = false)
+        lastEndedSession = null
 
         val session = Session(
             id = UUID.randomUUID().mostSignificantBits,
@@ -146,6 +154,19 @@ class SessionManagerImpl @Inject constructor(
         val updatedPackages = current.temporarilyAllowedPackages + (packageName to allowedUntil)
         sessionState.value = current.copy(temporarilyAllowedPackages = updatedPackages)
         sessionPreferencesDataStore.persistAllowedPackages(updatedPackages)
+    }
+
+    override suspend fun setSessionIntention(intention: String) {
+        val current = sessionState.value ?: return
+        val trimmed = intention.trim().take(INTENTION_MAX_LENGTH)
+        sessionState.value = current.copy(session = current.session.copy(intention = trimmed))
+        sessionPreferencesDataStore.persistIntention(trimmed)
+    }
+
+    override fun getLastEndedSession(): EndedSessionSummary? = lastEndedSession
+
+    override fun clearLastEndedSession() {
+        lastEndedSession = null
     }
 
     override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean {
@@ -239,18 +260,34 @@ class SessionManagerImpl @Inject constructor(
             ),
         )
 
-        return clearActiveSessionForReplacement()
+        // The emergency note is the reflection — don't prompt again.
+        return clearActiveSessionForReplacement(recordForReflection = false)
             ?.let { SessionEndResult.Ended(it) }
             ?: SessionEndResult.Failed("Unable to end session.")
     }
 
-    private suspend fun clearActiveSessionForReplacement(): Session? {
+    private suspend fun clearActiveSessionForReplacement(
+        recordForReflection: Boolean = true,
+    ): Session? {
         val current = sessionState.value ?: return null
 
+        val now = System.currentTimeMillis()
         val endedSession = current.session.copy(
-            endedAtEpochMillis = System.currentTimeMillis(),
+            endedAtEpochMillis = now,
             isActive = false,
         )
+
+        // A normal end offers a reflection; a start-replacement or emergency exit does not.
+        lastEndedSession = if (recordForReflection) {
+            EndedSessionSummary(
+                sessionId = current.session.id,
+                mode = current.session.mode,
+                durationMillis = (now - current.session.startedAtEpochMillis).coerceAtLeast(0L),
+                intention = current.session.intention,
+            )
+        } else {
+            null
+        }
 
         sessionState.value = null
         stopTimer()
@@ -281,5 +318,6 @@ class SessionManagerImpl @Inject constructor(
 
     private companion object {
         const val TIMER_TICK_MILLIS = 1_000L
+        const val INTENTION_MAX_LENGTH = 120
     }
 }

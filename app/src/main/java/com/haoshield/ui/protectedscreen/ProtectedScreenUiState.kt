@@ -20,13 +20,17 @@ data class ProtectedScreenUiState(
     val emergencyNote: String = "",
     val emergencyCountdownSeconds: Int = 0,
     val hasQrToken: Boolean = false,
+    val intention: String? = null,
+    val intentionDraft: String = "",
+    val showIntentionPrompt: Boolean = false,
 ) {
     val protectionMessage: String
-        get() = when (sessionMode) {
-            SessionMode.SOFTWARE -> "You are protecting your attention."
-            SessionMode.SHIELD -> "Your Shield is with you."
-            null -> "Returning to yourself."
-        }
+        get() = intention?.takeIf { it.isNotBlank() }?.let { "For: $it" }
+            ?: when (sessionMode) {
+                SessionMode.SOFTWARE -> "You are protecting your attention."
+                SessionMode.SHIELD -> "Your Shield is with you."
+                null -> "Returning to yourself."
+            }
 
     val endButtonLabel: String
         get() = when (sessionMode) {

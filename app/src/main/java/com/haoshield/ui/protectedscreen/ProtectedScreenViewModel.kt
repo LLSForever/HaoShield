@@ -46,6 +46,9 @@ class ProtectedScreenViewModel @Inject constructor(
     // Session defaults, read once when the screen opens.
     private var quotesEnabled: Boolean = true
 
+    // Once the person sets or waves away the intention prompt, it doesn't return for this session.
+    private var intentionPromptDismissed: Boolean = false
+
     init {
         applySessionDefaults()
         observeSession()
@@ -73,6 +76,29 @@ class ProtectedScreenViewModel @Inject constructor(
         }
     }
 
+    fun onIntentionDraftChange(text: String) {
+        if (text.length > INTENTION_MAX_LENGTH) return
+        _uiState.update { it.copy(intentionDraft = text) }
+    }
+
+    fun onSubmitIntention() {
+        intentionPromptDismissed = true
+        val draft = _uiState.value.intentionDraft.trim()
+        if (draft.isBlank()) {
+            _uiState.update { it.copy(showIntentionPrompt = false) }
+            return
+        }
+        viewModelScope.launch {
+            sessionManager.setSessionIntention(draft)
+            _uiState.update { it.copy(showIntentionPrompt = false) }
+        }
+    }
+
+    fun onDismissIntentionPrompt() {
+        intentionPromptDismissed = true
+        _uiState.update { it.copy(showIntentionPrompt = false) }
+    }
+
     fun onEndSessionClick() {
         if (_uiState.value.isEndingSession) return
 
@@ -80,10 +106,9 @@ class ProtectedScreenViewModel @Inject constructor(
             _uiState.update { it.copy(isEndingSession = true, endSessionHint = null) }
 
             when (val result = endSessionUseCase(SessionEndMethod.IN_APP)) {
-                is SessionEndResult.Ended -> {
-                    stopAmbientMusic()
-                    _events.send(ProtectedScreenEvent.NavigateHome)
-                }
+                // Navigation is driven by observeSession() reacting to the session going null, so
+                // both in-app and scan ends flow to the reflection screen through one path.
+                is SessionEndResult.Ended -> Unit
                 is SessionEndResult.RequiresShieldScan -> {
                     _uiState.update {
                         it.copy(
@@ -151,12 +176,11 @@ class ProtectedScreenViewModel @Inject constructor(
             }
 
             when (val result = sessionManager.endShieldSessionByEmergency(note)) {
+                // observeSession() navigates Home (no reflection — the note is the reflection).
                 is SessionEndResult.Ended -> {
-                    stopAmbientMusic()
                     _uiState.update {
                         it.copy(emergencyStep = null, emergencyNote = "", emergencyCountdownSeconds = 0)
                     }
-                    _events.send(ProtectedScreenEvent.NavigateHome)
                 }
                 is SessionEndResult.RequiresShieldScan -> {
                     _uiState.update {
@@ -200,16 +224,29 @@ class ProtectedScreenViewModel @Inject constructor(
                 if (sessionState == null) {
                     stopQuoteRotation()
                     stopAmbientMusic()
-                    _events.send(ProtectedScreenEvent.NavigateHome)
+                    // A normal end leaves a reflection summary; an emergency exit doesn't.
+                    val event = if (sessionManager.getLastEndedSession() != null) {
+                        ProtectedScreenEvent.NavigateToReflection
+                    } else {
+                        ProtectedScreenEvent.NavigateHome
+                    }
+                    _events.send(event)
                     return@collect
                 }
 
+                val intention = sessionState.session.intention
                 _uiState.update {
                     it.copy(
                         formattedElapsedTime = ProtectedTimeFormatter.format(sessionState.elapsedMillis),
                         sessionMode = sessionState.session.mode,
                         isSessionActive = true,
                         isEndingSession = false,
+                        intention = intention,
+                        // Offer the gentle "what is this time for?" prompt only early, and only
+                        // until an intention is set or the prompt is dismissed.
+                        showIntentionPrompt = intention == null &&
+                            !intentionPromptDismissed &&
+                            sessionState.elapsedMillis < INTENTION_PROMPT_WINDOW_MS,
                     )
                 }
                 startQuoteRotation()
@@ -263,9 +300,12 @@ class ProtectedScreenViewModel @Inject constructor(
         const val QUOTE_INTERVAL_MS = 50_000L
         const val EMERGENCY_COUNTDOWN_SECONDS = 60
         const val EMERGENCY_NOTE_MAX_LENGTH = 240
+        const val INTENTION_MAX_LENGTH = 120
+        const val INTENTION_PROMPT_WINDOW_MS = 120_000L
     }
 }
 
 sealed interface ProtectedScreenEvent {
     data object NavigateHome : ProtectedScreenEvent
+    data object NavigateToReflection : ProtectedScreenEvent
 }
