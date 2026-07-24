@@ -19,7 +19,29 @@ class BlockingOverlayManager @Inject constructor(
 ) {
     private val windowManager: WindowManager =
         context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private var overlayView: View? = null
+
+    // Whether the cached view is currently attached to the window manager.
+    private var attached: Boolean = false
+
+    // The overlay view is inflated once and reused. Re-inflating on every block added latency to the
+    // moment the boundary appears, widening the brief flash of the app underneath.
+    private val overlayView: View by lazy {
+        LayoutInflater.from(context).inflate(R.layout.view_blocking_overlay, null)
+    }
+
+    private val overlayParams: WindowManager.LayoutParams by lazy {
+        WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            // Focusable (no FLAG_NOT_FOCUSABLE) so the buttons are tappable and the back key can't
+            // slip past the boundary into the resting app.
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+    }
 
     fun canDrawOverlay(): Boolean = Settings.canDrawOverlays(context)
 
@@ -31,32 +53,21 @@ class BlockingOverlayManager @Inject constructor(
         onUnblock: () -> Unit,
         onStepAway: () -> Unit,
     ) {
-        if (!canDrawOverlay() || overlayView != null) return
+        if (!canDrawOverlay() || attached) return
 
-        val view = LayoutInflater.from(context).inflate(R.layout.view_blocking_overlay, null)
-        view.findViewById<TextView>(R.id.overlay_unblock_action).setOnClickListener { onUnblock() }
-        view.findViewById<TextView>(R.id.overlay_step_away_action).setOnClickListener { onStepAway() }
+        // Rewire the actions each time — the callbacks close over the current blocked package.
+        overlayView.findViewById<TextView>(R.id.overlay_unblock_action)
+            .setOnClickListener { onUnblock() }
+        overlayView.findViewById<TextView>(R.id.overlay_step_away_action)
+            .setOnClickListener { onStepAway() }
 
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            // Focusable (no FLAG_NOT_FOCUSABLE) so the buttons are tappable and the back key can't
-            // slip past the boundary into the resting app.
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.CENTER
-        }
-
-        windowManager.addView(view, params)
-        overlayView = view
+        runCatching { windowManager.addView(overlayView, overlayParams) }
+            .onSuccess { attached = true }
     }
 
     fun hide() {
-        overlayView?.let { view ->
-            runCatching { windowManager.removeView(view) }
-        }
-        overlayView = null
+        if (!attached) return
+        runCatching { windowManager.removeView(overlayView) }
+        attached = false
     }
 }

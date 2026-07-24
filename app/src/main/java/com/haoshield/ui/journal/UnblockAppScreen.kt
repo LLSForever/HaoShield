@@ -13,10 +13,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,9 +31,18 @@ fun UnblockAppScreen(
     viewModel: UnblockAppViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.isCompleted) {
         if (uiState.isCompleted) {
+            // The intention is written and the app is allowed for this session — take the user
+            // straight into it, so unblocking feels like opening the app, not filling a form.
+            val launchIntent = context.packageManager
+                .getLaunchIntentForPackage(uiState.packageName)
+                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (launchIntent != null) {
+                context.startActivity(launchIntent)
+            }
             onComplete()
         }
     }
