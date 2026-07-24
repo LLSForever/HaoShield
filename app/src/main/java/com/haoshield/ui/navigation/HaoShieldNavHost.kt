@@ -14,6 +14,7 @@ import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
+import com.haoshield.ui.intro.IntroScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
 import com.haoshield.ui.permissions.PermissionsScreen
@@ -36,6 +37,21 @@ fun HaoShieldNavHost(
         popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.STANDARD)) },
         popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.STANDARD)) },
     ) {
+        composable(Route.Intro.path) {
+            IntroScreen(
+                onFinished = {
+                    if (navController.previousBackStackEntry != null) {
+                        // Replayed from Settings — just return.
+                        navController.popBackStack()
+                    } else {
+                        // First run — replace the intro with Home.
+                        navController.navigate(Route.Home.path) {
+                            popUpTo(Route.Intro.path) { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
         composable(Route.Home.path) {
             HomeScreen(
                 onNavigate = navController::navigate,
@@ -63,6 +79,7 @@ fun HaoShieldNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToGuide = { navController.navigate(Route.Guide.path) },
                 onNavigateToPermissions = { navController.navigate(Route.Permissions.path) },
+                onNavigateToIntro = { navController.navigate(Route.Intro.path) },
             )
         }
         composable(Route.Permissions.path) {

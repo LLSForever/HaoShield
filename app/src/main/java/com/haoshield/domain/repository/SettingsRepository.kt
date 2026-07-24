@@ -27,4 +27,8 @@ interface SettingsRepository {
     fun observeThemePreference(): Flow<ThemePreference>
 
     suspend fun setThemePreference(preference: ThemePreference)
+
+    fun observeHasSeenIntro(): Flow<Boolean>
+
+    suspend fun setHasSeenIntro(seen: Boolean)
 }

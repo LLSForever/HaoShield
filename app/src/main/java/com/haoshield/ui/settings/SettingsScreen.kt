@@ -45,6 +45,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToGuide: () -> Unit,
     onNavigateToPermissions: () -> Unit,
+    onNavigateToIntro: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -178,6 +179,7 @@ fun SettingsScreen(
         HaoSectionLabel("ABOUT", topDivider = true)
         LinkRow(title = "Make Your Own Shield", onClick = onNavigateToGuide)
         LinkRow(title = "Permissions", onClick = onNavigateToPermissions)
+        LinkRow(title = "Replay introduction", onClick = onNavigateToIntro)
 
         Spacer(modifier = Modifier.padding(bottom = HaoTheme.spacing.xxl))
     }

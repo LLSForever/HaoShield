@@ -114,9 +114,19 @@ class SettingsPreferencesDataStore @Inject constructor(
         else -> ThemePreference.SYSTEM
     }
 
+    // --- First-run intro ---
+
+    fun observeHasSeenIntro(): Flow<Boolean> =
+        dataStore.data.map { preferences -> preferences[Keys.HAS_SEEN_INTRO] ?: false }
+
+    suspend fun setHasSeenIntro(seen: Boolean) {
+        dataStore.edit { preferences -> preferences[Keys.HAS_SEEN_INTRO] = seen }
+    }
+
     private object Keys {
         val BLOCKING_MODE = stringPreferencesKey("blocking_mode")
         val THEME = stringPreferencesKey("theme_preference")
+        val HAS_SEEN_INTRO = booleanPreferencesKey("has_seen_intro")
         val AMBIENT_SOUND = booleanPreferencesKey("ambient_sound_enabled")
         val QUOTES = booleanPreferencesKey("quotes_enabled")
         val STRICT_BLOCKING = booleanPreferencesKey("strict_blocking_enabled")

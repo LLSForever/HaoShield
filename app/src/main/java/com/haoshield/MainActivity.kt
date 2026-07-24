@@ -16,11 +16,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.first
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.domain.model.ThemePreference
@@ -72,11 +74,21 @@ class MainActivity : ComponentActivity() {
             }
 
             HaoTheme(dark = dark) {
+                // Resolve the first-run flag before choosing a start destination. Until it loads we
+                // render nothing but the paper ground — indistinguishable from the launch frame.
+                val hasSeenIntro by produceState<Boolean?>(initialValue = null) {
+                    value = settingsRepository.observeHasSeenIntro().first()
+                }
+
+                hasSeenIntro?.let { seen ->
                 val navController = rememberNavController()
                 val snackbarHostState = remember { SnackbarHostState() }
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    HaoShieldNavHost(navController = navController)
+                    HaoShieldNavHost(
+                        navController = navController,
+                        startDestination = if (seen) Route.Home.path else Route.Intro.path,
+                    )
                     SnackbarHost(
                         hostState = snackbarHostState,
                         modifier = Modifier
@@ -121,6 +133,7 @@ class MainActivity : ComponentActivity() {
                         navController.navigate(Route.Unblock.createRoute(unblockPackage))
                         pendingUnblockPackage.value = null
                     }
+                }
                 }
             }
         }

@@ -42,4 +42,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setThemePreference(preference: ThemePreference) =
         settingsPreferencesDataStore.setThemePreference(preference)
+
+    override fun observeHasSeenIntro(): Flow<Boolean> =
+        settingsPreferencesDataStore.observeHasSeenIntro()
+
+    override suspend fun setHasSeenIntro(seen: Boolean) =
+        settingsPreferencesDataStore.setHasSeenIntro(seen)
 }
