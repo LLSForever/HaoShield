@@ -44,8 +44,14 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
         val packageName = resolveForegroundPackage(event) ?: return
 
+        // Only a definitive foreground change may DISMISS the boundary. TYPE_WINDOWS_CHANGED fires
+        // constantly during launch animations (briefly resolving to the launcher, etc.); letting it
+        // hide caused the boundary to flicker off and on. It may only re-assert (show), which is what
+        // makes returning to a blocked app via recents re-cover it.
+        val canHide = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+
         serviceScope.launch {
-            handleForegroundPackage(packageName)
+            handleForegroundPackage(packageName, canHide)
         }
     }
 
@@ -75,7 +81,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    private suspend fun handleForegroundPackage(packageName: String) {
+    private suspend fun handleForegroundPackage(packageName: String, canHide: Boolean) {
         when {
             // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
             packageName == applicationContext.packageName -> return
@@ -84,8 +90,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             // escape happened — the overlay vanished and never re-appeared on return.
             packageName in TRANSIENT_SYSTEM_PACKAGES -> return
             blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName)
-            // Launcher or an allowed app: the user has genuinely left the blocked app.
-            else -> hideBoundary()
+            // Launcher or an allowed app: the user has genuinely left the blocked app — but only
+            // dismiss on a definitive foreground change, never on transient window churn.
+            canHide -> hideBoundary()
         }
     }
 
@@ -97,10 +104,14 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
 
         coveredPackage = packageName
+        // The callbacks read coveredPackage live rather than capturing [packageName], so that if the
+        // same overlay is reused across a blocked→blocked switch, Unblock still targets the app the
+        // user is actually looking at — not the one the overlay was first created for.
         overlayManager.show(
             onUnblock = {
+                val target = coveredPackage
                 hideBoundary()
-                launchUnblock(packageName)
+                target?.let { launchUnblock(it) }
             },
             onStepAway = {
                 hideBoundary()
