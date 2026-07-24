@@ -35,11 +35,16 @@ class StrictBlockingController @Inject constructor(
         if (ok) settings.setStrictApplied(true)
     }
 
-    /** Release every suspension. Safe to call unconditionally — only does work if we applied. */
+    /**
+     * Release every suspension. Safe to call unconditionally — only does work if we applied.
+     * The "applied" flag is cleared ONLY when the unsuspend actually succeeds; otherwise it is left
+     * set so a later release (session end, toggle off, next-launch cleanup) retries, rather than
+     * stranding the apps OS-suspended with no in-app path back.
+     */
     suspend fun releaseAll() {
         if (!settings.isStrictApplied()) return
-        rootShell.exec(blockedPackages().map { unsuspendCommand(it) })
-        settings.setStrictApplied(false)
+        val ok = rootShell.exec(blockedPackages().map { unsuspendCommand(it) })
+        if (ok) settings.setStrictApplied(false)
     }
 
     /** Release a single package, e.g. when it's unblocked with intention so it can open. */

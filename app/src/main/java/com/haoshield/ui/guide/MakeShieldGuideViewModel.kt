@@ -8,6 +8,7 @@ import com.haoshield.data.qr.QrCodeGenerator
 import com.haoshield.data.qr.ShieldQr
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
+import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.domain.service.NfcManager
 import com.haoshield.domain.service.ShieldScanHandler
 import com.haoshield.domain.service.ShieldTokenStore
@@ -76,7 +77,11 @@ class MakeShieldGuideViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 step = GuideStep.SUCCESS,
-                                statusMessage = MakeShieldGuideContent.registerSuccess,
+                                statusMessage = if (result.token.kind == ShieldTokenKind.QR) {
+                                    MakeShieldGuideContent.qrRegisterSuccess
+                                } else {
+                                    MakeShieldGuideContent.registerSuccess
+                                },
                                 registeredUid = result.token.id,
                             )
                         }
@@ -135,7 +140,7 @@ class MakeShieldGuideViewModel @Inject constructor(
 
     fun onLeaveRegistrationMode(activity: Activity) {
         if (nfcManager.isNfcAvailable() && nfcManager.isNfcEnabled()) {
-            nfcManager.enableForegroundReader(activity, ScanMode.SESSION)
+            nfcManager.exitRegistrationMode(activity)
         }
     }
 

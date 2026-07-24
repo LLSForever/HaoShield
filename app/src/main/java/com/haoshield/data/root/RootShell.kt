@@ -28,8 +28,13 @@ class RootShell @Inject constructor() {
     }
 
     /**
-     * Run [commands] in a single root shell session. Returns true if the shell exited cleanly.
+     * Run [commands] in a single root shell session. Returns true only if EVERY command succeeded.
      * The first call on a Magisk device surfaces the user's root-grant prompt.
+     *
+     * Commands are chained with `&&` so the first failure stops the shell; a trailing sentinel echo
+     * then only prints when the whole chain succeeded. Without this, `exitValue()` reflected only the
+     * last command — a mid-chain `pm suspend` failure would still report success, and its packages
+     * would be recorded as suspended when they weren't.
      */
     suspend fun exec(commands: List<String>): Boolean = withContext(Dispatchers.IO) {
         if (commands.isEmpty()) return@withContext true
@@ -38,22 +43,22 @@ class RootShell @Inject constructor() {
                 .redirectErrorStream(true)
                 .start()
             process.outputStream.bufferedWriter().use { writer ->
-                for (command in commands) {
-                    writer.write(command)
-                    writer.newLine()
-                }
+                writer.write(commands.joinToString(separator = " && "))
+                writer.write(" && echo $SUCCESS_SENTINEL")
+                writer.newLine()
                 writer.write("exit")
                 writer.newLine()
                 writer.flush()
             }
-            // Drain output so the process can finish.
-            process.inputStream.bufferedReader().use { it.readText() }
+            val output = process.inputStream.bufferedReader().use { it.readText() }
             process.waitFor()
-            process.exitValue() == 0
+            process.exitValue() == 0 && output.contains(SUCCESS_SENTINEL)
         }.getOrDefault(false)
     }
 
     private companion object {
+        const val SUCCESS_SENTINEL = "__HAO_OK__"
+
         val SU_PATHS = listOf(
             "/system/bin/su",
             "/system/xbin/su",

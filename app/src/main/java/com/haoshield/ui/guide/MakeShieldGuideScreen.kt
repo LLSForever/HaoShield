@@ -94,6 +94,7 @@ fun MakeShieldGuideScreen(
                 onBack = viewModel::onBackToChooseMethod,
             )
             GuideStep.SUCCESS -> RegistrationSuccessStep(
+                message = uiState.statusMessage ?: MakeShieldGuideContent.registerSuccess,
                 onContinue = viewModel::onDismissSuccess,
             )
         }
@@ -406,7 +407,7 @@ private fun WaitingBreathText(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun RegistrationSuccessStep(onContinue: () -> Unit) {
+private fun RegistrationSuccessStep(message: String, onContinue: () -> Unit) {
     ScreenColumn {
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xxl))
 
@@ -418,7 +419,7 @@ private fun RegistrationSuccessStep(onContinue: () -> Unit) {
         )
 
         Text(
-            text = MakeShieldGuideContent.registerSuccess,
+            text = message,
             modifier = Modifier.padding(top = HaoTheme.spacing.lg),
             style = HaoTheme.type.display,
             color = HaoTheme.colors.ink,

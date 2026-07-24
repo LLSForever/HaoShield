@@ -12,6 +12,7 @@ import com.haoshield.domain.service.ShieldScanHandler
 import com.haoshield.ui.navigation.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,7 +63,34 @@ class QrScannerViewModel @Inject constructor(
                 token = ShieldToken(ShieldTokenKind.QR, rawValue),
                 mode = scanMode,
             )
-            _events.send(QrScannerEvent.Finished(result))
+            when (result) {
+                // A transient miss (debounced, or "not the code you just made") shouldn't close the
+                // scanner — show the reason inline and let the camera keep trying.
+                is ShieldScanResult.Failed,
+                is ShieldScanResult.InvalidShield,
+                ShieldScanResult.NoShieldRegistered,
+                ShieldScanResult.SoftwareSessionActive -> {
+                    _uiState.update { it.copy(hint = result.hintMessage()) }
+                    delay(RETRY_COOLDOWN_MILLIS)
+                    handled = false
+                }
+                is ShieldScanResult.SessionStarted,
+                is ShieldScanResult.SessionEnded,
+                is ShieldScanResult.RegistrationComplete ->
+                    _events.send(QrScannerEvent.Finished(result))
+            }
         }
+    }
+
+    private fun ShieldScanResult.hintMessage(): String = when (this) {
+        is ShieldScanResult.Failed -> reason
+        is ShieldScanResult.InvalidShield -> "That isn't your registered Hǎo Shield."
+        ShieldScanResult.NoShieldRegistered -> "No Hǎo Shield is registered yet."
+        ShieldScanResult.SoftwareSessionActive -> "A Software session is already running."
+        else -> "Try again."
+    }
+
+    private companion object {
+        const val RETRY_COOLDOWN_MILLIS = 1_200L
     }
 }

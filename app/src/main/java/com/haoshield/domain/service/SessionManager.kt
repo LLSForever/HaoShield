@@ -38,4 +38,11 @@ interface SessionManager {
     suspend fun isAppTemporarilyAllowed(packageName: String): Boolean
 
     suspend fun restorePersistedSession()
+
+    /**
+     * Suspends until the persisted session (if any) has been restored after process start. Callers
+     * that gate blocking on session state must await this, or a blocked app opened during the brief
+     * post-restart window would slip through because the state still reads null.
+     */
+    suspend fun awaitRestored()
 }

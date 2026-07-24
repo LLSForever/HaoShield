@@ -12,9 +12,24 @@
         android:name="android.hardware.camera.any"
         android:required="false" />
 
+    <!--
+      Android 11+ package visibility. Without this, getLaunchIntentForPackage() returns null and
+      getApplicationInfo() throws for the apps we block — breaking the "unblock opens the app"
+      flow and showing raw package names instead of labels. We need to see launchable apps, which
+      is also what the blocked-apps picker enumerates.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".HaoShieldApplication"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/backup_rules"
+        android:fullBackupContent="@xml/backup_rules_legacy"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

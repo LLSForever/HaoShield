@@ -24,6 +24,7 @@ class ShieldScanHandlerImpl @Inject constructor(
 
     private val scanResults = MutableSharedFlow<ShieldScanResult>(extraBufferCapacity = 1)
     private var lastHandledId: String? = null
+    private var lastHandledMode: ScanMode? = null
     private var lastHandledAtMillis: Long = 0L
 
     override fun observeScanResults(): Flow<ShieldScanResult> = scanResults.asSharedFlow()
@@ -31,11 +32,12 @@ class ShieldScanHandlerImpl @Inject constructor(
     override suspend fun handleScan(token: ShieldToken, mode: ScanMode): ShieldScanResult {
         val normalized = token.normalized()
         // A physical tap or a continuously-decoding camera can fire the same token repeatedly;
-        // ignore rapid repeats silently (no emit) so listeners aren't spammed.
-        if (shouldDebounce(normalized.id)) {
+        // ignore rapid repeats silently (no emit) so listeners aren't spammed. Keyed on (id, mode)
+        // and a short window so a legitimate register→start or start→end tap isn't suppressed.
+        if (shouldDebounce(normalized.id, mode)) {
             return ShieldScanResult.Failed("Scan ignored — try again in a moment.")
         }
-        recordHandledScan(normalized.id)
+        recordHandledScan(normalized.id, mode)
 
         val result = when (mode) {
             ScanMode.REGISTRATION -> handleRegistration(normalized)
@@ -94,17 +96,20 @@ class ShieldScanHandlerImpl @Inject constructor(
         }
     }
 
-    private fun shouldDebounce(id: String): Boolean {
+    private fun shouldDebounce(id: String, mode: ScanMode): Boolean {
         val now = System.currentTimeMillis()
-        return id == lastHandledId && now - lastHandledAtMillis < DEBOUNCE_MILLIS
+        return id == lastHandledId &&
+            mode == lastHandledMode &&
+            now - lastHandledAtMillis < DEBOUNCE_MILLIS
     }
 
-    private fun recordHandledScan(id: String) {
+    private fun recordHandledScan(id: String, mode: ScanMode) {
         lastHandledId = id
+        lastHandledMode = mode
         lastHandledAtMillis = System.currentTimeMillis()
     }
 
     private companion object {
-        const val DEBOUNCE_MILLIS = 2_000L
+        const val DEBOUNCE_MILLIS = 1_200L
     }
 }

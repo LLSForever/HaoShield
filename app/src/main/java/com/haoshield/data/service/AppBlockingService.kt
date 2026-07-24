@@ -3,7 +3,8 @@ package com.haoshield.data.service
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Accessibility-based app blocking. Implementation will be wired in a later phase.
+ * Accessibility-based app blocking. Implemented by [com.haoshield.data.service.AccessibilityAppBlockingService],
+ * which tracks whether the [AppBlockingAccessibilityService] is currently connected.
  */
 interface AppBlockingService {
     fun observeIsEnabled(): Flow<Boolean>

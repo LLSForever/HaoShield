@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingUnblockPackage.value = intent?.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
+        // Consume it so a later configuration-change recreate doesn't re-open the unblock screen.
+        intent?.removeExtra(EXTRA_UNBLOCK_PACKAGE)
         setContent {
             val themePreference by settingsRepository.observeThemePreference()
                 .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
@@ -128,6 +130,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingUnblockPackage.value = intent.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
+        intent.removeExtra(EXTRA_UNBLOCK_PACKAGE)
     }
 
     override fun onResume() {

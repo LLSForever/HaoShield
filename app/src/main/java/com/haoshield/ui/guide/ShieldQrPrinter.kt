@@ -2,7 +2,6 @@ package com.haoshield.ui.guide
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
@@ -96,7 +95,7 @@ object ShieldQrPrinter {
         }
 
         private fun drawPage(page: PdfDocument.Page) {
-            val canvas = canvasFor(page)
+            val canvas = page.canvas
             val w = canvas.width.toFloat()
             val cx = w / 2f
 
@@ -158,11 +157,6 @@ object ShieldQrPrinter {
                 canvas.height - w * 0.06f,
                 footerPaint,
             )
-        }
-
-        /** The A4 canvas. Falls back to the full page if a content rect isn't provided. */
-        private fun canvasFor(page: PdfDocument.Page): Canvas {
-            return page.canvas
         }
     }
 

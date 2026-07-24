@@ -8,12 +8,15 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import com.haoshield.MainActivity
 import com.haoshield.data.service.AccessibilityAppBlockingService
+import com.haoshield.domain.service.SessionManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -23,11 +26,19 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     @Inject lateinit var overlayManager: BlockingOverlayManager
 
+    @Inject lateinit var sessionManager: SessionManager
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         AccessibilityAppBlockingService.setRunning(true)
+
+        // When a session ends (by any path — scan, emergency, another device event) while the
+        // boundary is up over a still-foreground blocked app, nothing else would take it down.
+        sessionManager.observeSessionState()
+            .onEach { state -> if (state == null) hideBoundary() }
+            .launchIn(serviceScope)
     }
 
     // The package the boundary is currently covering, so we don't churn show/hide on every event.

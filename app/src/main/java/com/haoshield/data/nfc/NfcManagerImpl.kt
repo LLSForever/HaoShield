@@ -27,6 +27,10 @@ class NfcManagerImpl @Inject constructor(
     private var readerMode: ScanMode = ScanMode.SESSION
     private var boundActivity: WeakReference<Activity>? = null
 
+    // While registering a Shield, SESSION requests (e.g. the host activity's onResume, which fires
+    // when the user returns from enabling NFC in system settings) must not downgrade the reader.
+    private var registrationActive: Boolean = false
+
     override fun isNfcAvailable(): Boolean =
         NfcAdapter.getDefaultAdapter(context) != null
 
@@ -34,7 +38,11 @@ class NfcManagerImpl @Inject constructor(
         NfcAdapter.getDefaultAdapter(context)?.isEnabled == true
 
     override fun enableForegroundReader(activity: Activity, mode: ScanMode) {
-        readerMode = mode
+        if (mode == ScanMode.REGISTRATION) {
+            registrationActive = true
+        }
+        // A SESSION request while registration is still active keeps REGISTRATION semantics.
+        readerMode = if (registrationActive) ScanMode.REGISTRATION else mode
         boundActivity = WeakReference(activity)
 
         val adapter = NfcAdapter.getDefaultAdapter(activity) ?: return
@@ -53,10 +61,17 @@ class NfcManagerImpl @Inject constructor(
     }
 
     override fun disableForegroundReader(activity: Activity) {
+        // Only stops the hardware reader (e.g. onPause). The registration intent survives the pause
+        // so returning to the app re-arms REGISTRATION, not SESSION.
         NfcAdapter.getDefaultAdapter(activity)?.disableReaderMode(activity)
         if (boundActivity?.get() == activity) {
             boundActivity = null
         }
+    }
+
+    override fun exitRegistrationMode(activity: Activity) {
+        registrationActive = false
+        enableForegroundReader(activity, ScanMode.SESSION)
     }
 
     private fun onTagDiscovered(tag: Tag) {

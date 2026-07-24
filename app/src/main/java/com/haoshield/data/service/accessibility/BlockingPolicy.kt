@@ -18,6 +18,9 @@ class BlockingPolicy @Inject constructor(
         if (packageName == context.packageName) return false
         if (packageName in IGNORED_PACKAGES) return false
 
+        // Ensure a session persisted across a process restart has been restored before we decide;
+        // otherwise a blocked app opened moments after restart would read null and slip through.
+        sessionManager.awaitRestored()
         sessionManager.getActiveSession() ?: return false
         if (sessionManager.isAppTemporarilyAllowed(packageName)) return false
 

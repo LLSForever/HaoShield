@@ -18,4 +18,12 @@ interface NfcManager {
     )
 
     fun disableForegroundReader(activity: Activity)
+
+    /**
+     * Leave registration mode and return the reader to ordinary SESSION scanning. Until this is
+     * called, a [enableForegroundReader] request for SESSION (e.g. from the host activity's
+     * onResume) is treated as REGISTRATION, so returning from system settings mid-registration
+     * doesn't silently downgrade the reader and break tag registration.
+     */
+    fun exitRegistrationMode(activity: Activity)
 }

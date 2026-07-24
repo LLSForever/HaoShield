@@ -15,6 +15,7 @@ import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.repository.JournalRepository
 import com.haoshield.domain.service.SessionManager
 import com.haoshield.domain.service.ShieldTokenStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -41,10 +42,18 @@ class SessionManagerImpl @Inject constructor(
     private val sessionState = MutableStateFlow<SessionState?>(null)
     private var timerJob: Job? = null
 
+    // Completed once the persisted session has been restored after process start. Blocking checks
+    // await this so a blocked app opened during the restore window isn't briefly let through.
+    private val restored = CompletableDeferred<Unit>()
+
     init {
         applicationScope.launch {
             restorePersistedSession()
         }
+    }
+
+    override suspend fun awaitRestored() {
+        restored.await()
     }
 
     override fun observeSessionState(): Flow<SessionState?> = sessionState.asStateFlow()
@@ -113,6 +122,11 @@ class SessionManagerImpl @Inject constructor(
             throw IllegalArgumentException("Journal note is required to unblock an app.")
         }
 
+        // In strict mode the app is OS-suspended — release it FIRST so it can actually open, and so
+        // a root failure aborts here (throwing) before we mutate state or write a journal entry.
+        // Otherwise a retry after a failed release would duplicate the journal note.
+        strictBlockingController.release(packageName)
+
         journalRepository.saveEntry(
             JournalEntry(
                 content = journalNote,
@@ -126,18 +140,19 @@ class SessionManagerImpl @Inject constructor(
         val updatedPackages = current.temporarilyAllowedPackages + packageName
         sessionState.value = current.copy(temporarilyAllowedPackages = updatedPackages)
         sessionPreferencesDataStore.persistAllowedPackages(updatedPackages)
-
-        // In strict mode the app is OS-suspended — release just this one so it can actually open.
-        // Awaited (not fire-and-forget) so the app is un-suspended before the caller launches it.
-        strictBlockingController.release(packageName)
     }
 
     override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean =
         sessionState.value?.temporarilyAllowedPackages?.contains(packageName) == true
 
     override suspend fun restorePersistedSession() {
-        val snapshot = sessionPreferencesDataStore.observePersistedSession().first()
-        restoreFromSnapshot(snapshot)
+        try {
+            val snapshot = sessionPreferencesDataStore.observePersistedSession().first()
+            restoreFromSnapshot(snapshot)
+        } finally {
+            // Unblock awaiters even if restore fails, so blocking never deadlocks on a bad read.
+            if (!restored.isCompleted) restored.complete(Unit)
+        }
     }
 
     private suspend fun restoreFromSnapshot(snapshot: PersistedSessionSnapshot?) {
