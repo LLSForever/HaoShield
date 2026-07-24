@@ -12,6 +12,8 @@ import androidx.navigation.navArgument
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
+import com.haoshield.ui.blockedapps.AppPickerScreen
+import com.haoshield.ui.blockedapps.BlockedAppsScreen
 import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
 import com.haoshield.ui.intro.IntroScreen
@@ -81,6 +83,7 @@ fun HaoShieldNavHost(
                 onNavigateToGuide = { navController.navigate(Route.Guide.path) },
                 onNavigateToPermissions = { navController.navigate(Route.Permissions.path) },
                 onNavigateToIntro = { navController.navigate(Route.Intro.path) },
+                onNavigateToBlockedApps = { navController.navigate(Route.BlockedApps.path) },
             )
         }
         composable(Route.Permissions.path) {
@@ -128,6 +131,17 @@ fun HaoShieldNavHost(
                         launchSingleTop = true
                     }
                 },
+            )
+        }
+        composable(Route.BlockedApps.path) {
+            BlockedAppsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAppPicker = { navController.navigate(Route.AppPicker.path) },
+            )
+        }
+        composable(Route.AppPicker.path) {
+            AppPickerScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
         composable(Route.Journal.path) {

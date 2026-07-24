@@ -25,6 +25,10 @@ sealed class Route(val path: String) {
             "unblock/${Uri.encode(packageName)}"
     }
 
+    data object BlockedApps : Route("blocked_apps")
+
+    data object AppPicker : Route("app_picker")
+
     data object Guide : Route("guide")
 
     data object QrScanner : Route("qr_scanner/{scanMode}") {

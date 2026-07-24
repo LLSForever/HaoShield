@@ -1,9 +1,11 @@
 package com.haoshield.data.blocking
 
+import com.haoshield.data.local.BlockedAppsDataStore
 import com.haoshield.data.local.SettingsPreferencesDataStore
 import com.haoshield.data.root.RootShell
 import com.haoshield.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -28,14 +30,18 @@ import javax.inject.Singleton
 class StrictBlockingController @Inject constructor(
     private val rootShell: RootShell,
     private val settings: SettingsPreferencesDataStore,
+    private val blockedAppsDataStore: BlockedAppsDataStore,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) {
     // Per-package re-suspend timers for expired temporary unblocks.
     private val pendingResuspends = mutableMapOf<String, Job>()
     private val resuspendLock = Mutex()
 
-    private fun blockedPackages(): List<String> =
-        PresetBlockedAppGroups.flatMap { it.packageNames }.distinct()
+    // The effective blocklist — the user's selection, or the presets until they customise.
+    private suspend fun blockedPackages(): List<String> =
+        (blockedAppsDataStore.observeBlockedPackages().first()
+            ?: PresetBlockedAppGroups.flatMap { it.packageNames }.toSet())
+            .toList()
 
     /** Suspend all blocked packages, if strict mode is enabled and root is available. */
     suspend fun applyForSession() {

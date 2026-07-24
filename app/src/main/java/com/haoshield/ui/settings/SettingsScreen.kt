@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -28,15 +27,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ThemePreference
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoSectionLabel
+import com.haoshield.ui.components.HaoSelectionDot
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 
@@ -46,6 +43,7 @@ fun SettingsScreen(
     onNavigateToGuide: () -> Unit,
     onNavigateToPermissions: () -> Unit,
     onNavigateToIntro: () -> Unit,
+    onNavigateToBlockedApps: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -115,12 +113,7 @@ fun SettingsScreen(
                 trailing = "${group.count} apps",
             )
         }
-        Text(
-            text = "Editing groups is coming soon.",
-            style = HaoTheme.type.caption,
-            color = HaoTheme.colors.inkFaint,
-            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-        )
+        LinkRow(title = "Edit blocked apps", onClick = onNavigateToBlockedApps)
 
         // --- BLOCKING METHOD ---
         HaoSectionLabel("BLOCKING METHOD", topDivider = true)
@@ -199,29 +192,13 @@ private fun ModeRow(
             .padding(vertical = HaoTheme.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SelectionDot(selected = selected)
+        HaoSelectionDot(selected = selected)
         Spacer(modifier = Modifier.width(HaoTheme.spacing.md))
         Column {
             Text(text = title, style = HaoTheme.type.body, color = HaoTheme.colors.ink)
             Text(text = description, style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
         }
     }
-}
-
-@Composable
-private fun SelectionDot(selected: Boolean) {
-    val ring = HaoTheme.colors.inkSoft
-    val fill = HaoTheme.colors.ink
-    Spacer(
-        modifier = Modifier
-            .size(18.dp)
-            .drawBehind {
-                drawCircle(color = ring, radius = size.minDimension / 2f, style = Stroke(1.5.dp.toPx()))
-                if (selected) {
-                    drawCircle(color = fill, radius = size.minDimension / 4f)
-                }
-            },
-    )
 }
 
 @Composable

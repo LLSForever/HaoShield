@@ -10,6 +10,16 @@ interface BlockingRepository {
 
     suspend fun getBlockedPackageNames(): Set<String>
 
+    /** The effective blocklist as a live set, for the editor to reflect and toggle. */
+    fun observeBlockedPackageNames(): Flow<Set<String>>
+
+    /** The curated preset groups, regardless of the user's current selection. */
+    fun getPresetGroups(): List<BlockedAppGroup>
+
+    suspend fun addBlockedPackage(packageName: String)
+
+    suspend fun removeBlockedPackage(packageName: String)
+
     suspend fun unblockAppForSession(
         sessionId: Long,
         packageName: String,
