@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.domain.model.UnblockPolicy
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoTextField
@@ -83,7 +84,8 @@ fun UnblockAppScreen(
         )
 
         Text(
-            text = "This unblock lasts only for the current session.",
+            text = "This unblock lasts ${UnblockPolicy.windowMinutes} minutes, then the boundary " +
+                "returns.",
             modifier = Modifier.padding(top = HaoTheme.spacing.md),
             style = HaoTheme.type.caption,
             color = HaoTheme.colors.inkFaint,

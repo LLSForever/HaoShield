@@ -2,7 +2,13 @@ package com.haoshield.data.blocking
 
 import com.haoshield.data.local.SettingsPreferencesDataStore
 import com.haoshield.data.root.RootShell
-import kotlinx.coroutines.flow.first
+import com.haoshield.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,12 +28,18 @@ import javax.inject.Singleton
 class StrictBlockingController @Inject constructor(
     private val rootShell: RootShell,
     private val settings: SettingsPreferencesDataStore,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) {
+    // Per-package re-suspend timers for expired temporary unblocks.
+    private val pendingResuspends = mutableMapOf<String, Job>()
+    private val resuspendLock = Mutex()
+
     private fun blockedPackages(): List<String> =
         PresetBlockedAppGroups.flatMap { it.packageNames }.distinct()
 
     /** Suspend all blocked packages, if strict mode is enabled and root is available. */
     suspend fun applyForSession() {
+        cancelAllResuspends()
         if (!settings.isStrictBlockingEnabled()) return
         if (!rootShell.isRootBinaryPresent()) return
 
@@ -42,15 +54,41 @@ class StrictBlockingController @Inject constructor(
      * stranding the apps OS-suspended with no in-app path back.
      */
     suspend fun releaseAll() {
+        cancelAllResuspends()
         if (!settings.isStrictApplied()) return
         val ok = rootShell.exec(blockedPackages().map { unsuspendCommand(it) })
         if (ok) settings.setStrictApplied(false)
     }
 
-    /** Release a single package, e.g. when it's unblocked with intention so it can open. */
-    suspend fun release(packageName: String) {
+    /**
+     * Release a single package so it can open (unblock with intention). If [resuspendAfterMillis] is
+     * given, the app is re-suspended when the allowance expires, so strict mode re-locks it just as
+     * the calm boundary would in the non-root case.
+     */
+    suspend fun release(packageName: String, resuspendAfterMillis: Long? = null) {
         if (!settings.isStrictApplied()) return
         rootShell.exec(listOf(unsuspendCommand(packageName)))
+
+        resuspendLock.withLock {
+            pendingResuspends.remove(packageName)?.cancel()
+            if (resuspendAfterMillis != null) {
+                pendingResuspends[packageName] = applicationScope.launch {
+                    delay(resuspendAfterMillis)
+                    if (settings.isStrictApplied()) {
+                        rootShell.exec(listOf(suspendCommand(packageName)))
+                    }
+                    // The finished Job is left in the map; it's cancelled/cleared on the next
+                    // apply/release/releaseAll. Cancelling a completed Job is a harmless no-op.
+                }
+            }
+        }
+    }
+
+    private suspend fun cancelAllResuspends() {
+        resuspendLock.withLock {
+            pendingResuspends.values.forEach { it.cancel() }
+            pendingResuspends.clear()
+        }
     }
 
     private fun suspendCommand(packageName: String): String = "pm suspend $packageName"

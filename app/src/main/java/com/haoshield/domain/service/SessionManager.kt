@@ -37,6 +37,9 @@ interface SessionManager {
 
     suspend fun isAppTemporarilyAllowed(packageName: String): Boolean
 
+    /** Epoch millis at which [packageName]'s temporary allowance expires, or null if not allowed. */
+    suspend fun getTemporaryAllowanceExpiry(packageName: String): Long?
+
     suspend fun restorePersistedSession()
 
     /**

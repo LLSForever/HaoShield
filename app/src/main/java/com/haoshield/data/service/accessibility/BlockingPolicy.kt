@@ -27,6 +27,17 @@ class BlockingPolicy @Inject constructor(
         return packageName in blockingRepository.getBlockedPackageNames()
     }
 
+    /**
+     * Millis until [packageName]'s temporary allowance expires and it becomes blockable again, or
+     * null if it isn't a blocked app on a live allowance. The service uses this to schedule the
+     * boundary's return even while the user is still sitting inside the unblocked app.
+     */
+    suspend fun temporaryAllowanceRemainingMillis(packageName: String): Long? {
+        if (packageName !in blockingRepository.getBlockedPackageNames()) return null
+        val expiry = sessionManager.getTemporaryAllowanceExpiry(packageName) ?: return null
+        return (expiry - System.currentTimeMillis()).takeIf { it > 0 }
+    }
+
     private companion object {
         val IGNORED_PACKAGES = setOf(
             "android",

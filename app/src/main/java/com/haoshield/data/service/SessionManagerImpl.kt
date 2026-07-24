@@ -12,6 +12,7 @@ import com.haoshield.domain.model.SessionEndResult
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.SessionState
 import com.haoshield.domain.model.ShieldToken
+import com.haoshield.domain.model.UnblockPolicy
 import com.haoshield.domain.repository.JournalRepository
 import com.haoshield.domain.service.SessionManager
 import com.haoshield.domain.service.ShieldTokenStore
@@ -82,13 +83,13 @@ class SessionManagerImpl @Inject constructor(
         val state = SessionState(
             session = session,
             elapsedMillis = 0L,
-            temporarilyAllowedPackages = emptySet(),
+            temporarilyAllowedPackages = emptyMap(),
         )
 
         sessionState.value = state
         sessionPreferencesDataStore.persistActiveSession(
             session = session,
-            temporarilyAllowedPackages = emptySet(),
+            temporarilyAllowedPackages = emptyMap(),
         )
         startTimer(session.startedAtEpochMillis)
 
@@ -124,8 +125,12 @@ class SessionManagerImpl @Inject constructor(
 
         // In strict mode the app is OS-suspended — release it FIRST so it can actually open, and so
         // a root failure aborts here (throwing) before we mutate state or write a journal entry.
-        // Otherwise a retry after a failed release would duplicate the journal note.
-        strictBlockingController.release(packageName)
+        // Otherwise a retry after a failed release would duplicate the journal note. The window
+        // matches the allowance, after which strict mode re-suspends the app.
+        strictBlockingController.release(
+            packageName = packageName,
+            resuspendAfterMillis = UnblockPolicy.UNBLOCK_WINDOW_MILLIS,
+        )
 
         journalRepository.saveEntry(
             JournalEntry(
@@ -137,13 +142,21 @@ class SessionManagerImpl @Inject constructor(
             ),
         )
 
-        val updatedPackages = current.temporarilyAllowedPackages + packageName
+        val allowedUntil = System.currentTimeMillis() + UnblockPolicy.UNBLOCK_WINDOW_MILLIS
+        val updatedPackages = current.temporarilyAllowedPackages + (packageName to allowedUntil)
         sessionState.value = current.copy(temporarilyAllowedPackages = updatedPackages)
         sessionPreferencesDataStore.persistAllowedPackages(updatedPackages)
     }
 
-    override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean =
-        sessionState.value?.temporarilyAllowedPackages?.contains(packageName) == true
+    override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean {
+        val expiry = sessionState.value?.temporarilyAllowedPackages?.get(packageName) ?: return false
+        return System.currentTimeMillis() < expiry
+    }
+
+    override suspend fun getTemporaryAllowanceExpiry(packageName: String): Long? {
+        val expiry = sessionState.value?.temporarilyAllowedPackages?.get(packageName) ?: return null
+        return expiry.takeIf { System.currentTimeMillis() < it }
+    }
 
     override suspend fun restorePersistedSession() {
         try {
@@ -166,10 +179,13 @@ class SessionManagerImpl @Inject constructor(
         }
 
         val elapsed = System.currentTimeMillis() - snapshot.session.startedAtEpochMillis
+        val now = System.currentTimeMillis()
         sessionState.value = SessionState(
             session = snapshot.session,
             elapsedMillis = elapsed.coerceAtLeast(0L),
-            temporarilyAllowedPackages = snapshot.temporarilyAllowedPackages,
+            // Drop allowances that expired while the process was dead — they re-block on restore.
+            temporarilyAllowedPackages = snapshot.temporarilyAllowedPackages
+                .filterValues { it > now },
         )
         startTimer(snapshot.session.startedAtEpochMillis)
     }

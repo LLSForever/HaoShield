@@ -23,7 +23,7 @@ private val Context.sessionDataStore: DataStore<Preferences> by preferencesDataS
 
 data class PersistedSessionSnapshot(
     val session: Session,
-    val temporarilyAllowedPackages: Set<String>,
+    val temporarilyAllowedPackages: Map<String, Long>,
 )
 
 @Singleton
@@ -48,30 +48,47 @@ class SessionPreferencesDataStore @Inject constructor(
                     startedAtEpochMillis = preferences[Keys.STARTED_AT] ?: return@map null,
                     isActive = true,
                 ),
-                temporarilyAllowedPackages = preferences[Keys.ALLOWED_PACKAGES].orEmpty(),
+                temporarilyAllowedPackages = preferences[Keys.ALLOWED_PACKAGES]
+                    .orEmpty()
+                    .decodeAllowances(),
             )
         }
 
     suspend fun persistActiveSession(
         session: Session,
-        temporarilyAllowedPackages: Set<String>,
+        temporarilyAllowedPackages: Map<String, Long>,
     ) {
         dataStore.edit { preferences ->
             preferences[Keys.IS_ACTIVE] = true
             preferences[Keys.SESSION_ID] = session.id
             preferences[Keys.MODE] = session.mode.name
             preferences[Keys.STARTED_AT] = session.startedAtEpochMillis
-            preferences[Keys.ALLOWED_PACKAGES] = temporarilyAllowedPackages
+            preferences[Keys.ALLOWED_PACKAGES] = temporarilyAllowedPackages.encodeAllowances()
         }
     }
 
-    suspend fun persistAllowedPackages(packages: Set<String>) {
+    suspend fun persistAllowedPackages(packages: Map<String, Long>) {
         dataStore.edit { preferences ->
             if (preferences[Keys.IS_ACTIVE] == true) {
-                preferences[Keys.ALLOWED_PACKAGES] = packages
+                preferences[Keys.ALLOWED_PACKAGES] = packages.encodeAllowances()
             }
         }
     }
+
+    // Each allowance is stored as "packageName|expiryEpochMillis". Legacy plain-package entries (a
+    // session live across the update that introduced expiry) have no delimiter and are dropped —
+    // fail-closed, so the app re-blocks and the user can simply unblock again.
+    private fun Map<String, Long>.encodeAllowances(): Set<String> =
+        map { (pkg, expiry) -> "$pkg$ALLOWANCE_DELIMITER$expiry" }.toSet()
+
+    private fun Set<String>.decodeAllowances(): Map<String, Long> =
+        mapNotNull { entry ->
+            val delimiter = entry.lastIndexOf(ALLOWANCE_DELIMITER)
+            if (delimiter <= 0) return@mapNotNull null
+            val pkg = entry.substring(0, delimiter)
+            val expiry = entry.substring(delimiter + 1).toLongOrNull() ?: return@mapNotNull null
+            pkg to expiry
+        }.toMap()
 
     suspend fun clearSession() {
         dataStore.edit { preferences ->
@@ -89,5 +106,9 @@ class SessionPreferencesDataStore @Inject constructor(
         val MODE = stringPreferencesKey("session_mode")
         val STARTED_AT = longPreferencesKey("session_started_at")
         val ALLOWED_PACKAGES = stringSetPreferencesKey("allowed_packages")
+    }
+
+    private companion object {
+        const val ALLOWANCE_DELIMITER = '|'
     }
 }

@@ -13,8 +13,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -43,6 +45,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     // The package the boundary is currently covering, so we don't churn show/hide on every event.
     @Volatile private var coveredPackage: String? = null
+
+    // Scheduled re-evaluation when a temporary unblock expires while its app is still foreground.
+    private var recheckJob: Job? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
@@ -86,6 +91,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
+        recheckJob?.cancel()
         hideBoundary()
         AccessibilityAppBlockingService.setRunning(false)
         serviceScope.cancel()
@@ -93,6 +99,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     }
 
     private suspend fun handleForegroundPackage(packageName: String, canHide: Boolean) {
+        recheckJob?.cancel()
         when {
             // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
             packageName == applicationContext.packageName -> return
@@ -101,9 +108,24 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             // escape happened — the overlay vanished and never re-appeared on return.
             packageName in TRANSIENT_SYSTEM_PACKAGES -> return
             blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName)
-            // Launcher or an allowed app: the user has genuinely left the blocked app — but only
-            // dismiss on a definitive foreground change, never on transient window churn.
-            canHide -> hideBoundary()
+            else -> {
+                // A temporarily-unblocked app: schedule the boundary's return at expiry, so it
+                // re-covers even if the user never leaves the app. Otherwise only dismiss on a
+                // definitive foreground change, never on transient window churn.
+                scheduleAllowanceRecheck(packageName)
+                if (canHide) hideBoundary()
+            }
+        }
+    }
+
+    private fun scheduleAllowanceRecheck(packageName: String) {
+        recheckJob = serviceScope.launch {
+            val remaining = blockingPolicy.temporaryAllowanceRemainingMillis(packageName) ?: return@launch
+            delay(remaining + RECHECK_SLACK_MILLIS)
+            val current = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
+                ?: packageName
+            // Re-assert only (canHide = false) — consistent with the anti-flicker rule.
+            handleForegroundPackage(current, canHide = false)
         }
     }
 
@@ -151,6 +173,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             "com.android.systemui",
             "android",
         )
+
+        // A little past the exact expiry, so the allowance has definitely lapsed when we re-check.
+        private const val RECHECK_SLACK_MILLIS = 500L
 
         fun isServiceEnabled(context: Context): Boolean {
             val enabledServices = Settings.Secure.getString(
