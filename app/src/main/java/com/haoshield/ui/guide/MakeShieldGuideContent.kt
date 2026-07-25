@@ -26,7 +26,8 @@ internal object MakeShieldGuideContent {
         GuideStepContent(
             number = 2,
             title = "Add the tag",
-            body = "Affix a blank NFC sticker (NTAG213 works well) beneath or inside it.",
+            body = "Affix a blank NFC sticker (NTAG213 works well) beneath or inside it — or skip " +
+                "the tag and print a Shield code instead.",
         ),
         GuideStepContent(
             number = 3,
@@ -41,7 +42,16 @@ internal object MakeShieldGuideContent {
     )
 
     const val registerPrompt =
-        "When your Shield is ready, register it below to link it to Hǎo Shield on this device."
+        "When your Shield is ready, register it below — you'll choose between an NFC tag you tap " +
+            "and a code you print and scan."
+
+    /** Surfaced on the guide itself, so the printed route is visible without tapping through. */
+    const val printedAlternative =
+        "No tag to hand? A printed Shield code works just as well — you scan it instead of " +
+            "tapping, and it never runs out of battery."
+
+    const val noNfcOnDevice =
+        "This phone doesn't have NFC, so a printed code is your way in."
 
     const val registerInstruction =
         "Hold your Shield to the back of your phone. Stay still for a moment."

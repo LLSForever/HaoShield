@@ -75,6 +75,7 @@ fun MakeShieldGuideScreen(
                 uiState = uiState,
                 onNavigateBack = onNavigateBack,
                 onBeginRegistration = viewModel::onBeginRegistration,
+                onChoosePrintedCode = viewModel::onChooseQrMethod,
             )
             GuideStep.CHOOSE_METHOD -> ChooseMethodStep(
                 isGeneratingQr = uiState.isGeneratingQr,
@@ -123,6 +124,7 @@ private fun GuideContentStep(
     uiState: MakeShieldGuideUiState,
     onNavigateBack: () -> Unit,
     onBeginRegistration: () -> Unit,
+    onChoosePrintedCode: () -> Unit,
 ) {
     ScreenColumn {
         HaoBackLink(onClick = onNavigateBack)
@@ -179,6 +181,19 @@ private fun GuideContentStep(
             )
         }
 
+        // The printed route, stated here rather than hidden one tap deeper — someone with no tag
+        // (or no NFC at all) would otherwise read four sticker-shaped steps and give up.
+        Text(
+            text = if (uiState.isNfcAvailable) {
+                MakeShieldGuideContent.printedAlternative
+            } else {
+                MakeShieldGuideContent.noNfcOnDevice
+            },
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+        )
+
         Text(
             text = MakeShieldGuideContent.registerPrompt,
             modifier = Modifier.padding(top = HaoTheme.spacing.lg),
@@ -191,6 +206,15 @@ private fun GuideContentStep(
         HaoPrimaryButton(
             text = if (uiState.registeredUid == null) "Register your Shield" else "Register another",
             onClick = onBeginRegistration,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+
+        HaoSecondaryButton(
+            text = if (uiState.isGeneratingQr) "Preparing…" else "Make a printed code",
+            onClick = onChoosePrintedCode,
+            enabled = !uiState.isGeneratingQr,
             modifier = Modifier.fillMaxWidth(),
         )
 
