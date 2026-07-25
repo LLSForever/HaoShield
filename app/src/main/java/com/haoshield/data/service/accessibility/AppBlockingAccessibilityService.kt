@@ -105,10 +105,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
      */
     private suspend fun onForegroundEvent(packageName: String, canHide: Boolean) {
         recheckJob?.cancel()
-        evaluate(packageName, canHide)
+        evaluate(packageName, canHide, isRelock = false)
     }
 
-    private suspend fun evaluate(packageName: String, canHide: Boolean) {
+    private suspend fun evaluate(packageName: String, canHide: Boolean, isRelock: Boolean) {
         when {
             // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
             packageName == applicationContext.packageName -> return
@@ -116,7 +116,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             // blocked app isn't exposed underneath. Tearing it down here is how the app-switch
             // escape happened — the overlay vanished and never re-appeared on return.
             packageName in TRANSIENT_SYSTEM_PACKAGES -> return
-            blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName)
+            blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName, isRelock)
             else -> {
                 // A temporarily-unblocked app: schedule the boundary's return at expiry, so it
                 // re-covers even if the user never leaves the app. Otherwise only dismiss on a
@@ -134,11 +134,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             val current = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
                 ?: packageName
             // Re-assert only (canHide = false), and via evaluate() so we don't cancel ourselves.
-            evaluate(current, canHide = false)
+            // This is a re-lock — the allowance expired — so the boundary reads as a renewal.
+            evaluate(current, canHide = false, isRelock = true)
         }
     }
 
-    private fun showBoundary(packageName: String) {
+    private fun showBoundary(packageName: String, isRelock: Boolean) {
         if (!overlayManager.canDrawOverlay()) {
             // Without overlay permission we can't show the calm screen; at least step the user away.
             performGlobalAction(GLOBAL_ACTION_HOME)
@@ -159,6 +160,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 hideBoundary()
                 performGlobalAction(GLOBAL_ACTION_HOME)
             },
+            isRelock = isRelock,
         )
     }
 

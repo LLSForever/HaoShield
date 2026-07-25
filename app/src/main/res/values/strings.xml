@@ -4,6 +4,7 @@
     <string name="accessibility_service_description">Hǎo Shield gently protects your attention by pausing blocked apps during a protected session.</string>
     <string name="overlay_protected_title">Protected</string>
     <string name="overlay_protected_message">This app is resting.\nReturn when you choose.</string>
+    <string name="overlay_relock_message">Your time with this app has passed.\nStep away, or renew your intention.</string>
     <string name="overlay_unblock_action">Unblock with intention</string>
     <string name="overlay_step_away_action">Step away</string>
 </resources>

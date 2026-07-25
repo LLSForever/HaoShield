@@ -88,7 +88,8 @@ private fun JournalEmptyState(modifier: Modifier = Modifier) {
                 color = HaoTheme.colors.ink,
             )
             Text(
-                text = "When you unblock an app or end a session early,\nyour words are kept here.",
+                text = "Your intentions and reflections, and the notes you write\n" +
+                    "to pass a boundary, are kept here.",
                 modifier = Modifier.padding(top = HaoTheme.spacing.sm),
                 style = HaoTheme.type.caption,
                 color = HaoTheme.colors.inkSoft,

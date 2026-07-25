@@ -58,15 +58,17 @@ class ReflectionViewModel @Inject constructor(
 
     fun onDone() {
         viewModelScope.launch {
+            // Only the person's own words become a journal entry. A skipped reflection writes
+            // nothing — the intention alone isn't a reflection, and auto-logging it every session
+            // would just be noise.
             val reflection = _uiState.value.reflectionText.trim()
-            val intention = _uiState.value.intention?.trim().orEmpty()
-            val content = when {
-                reflection.isNotEmpty() && intention.isNotEmpty() -> "For: $intention\n$reflection"
-                reflection.isNotEmpty() -> reflection
-                intention.isNotEmpty() -> intention
-                else -> null
-            }
-            if (content != null) {
+            if (reflection.isNotEmpty()) {
+                val intention = _uiState.value.intention?.trim().orEmpty()
+                val content = if (intention.isNotEmpty()) {
+                    "You set this time aside for $intention.\n$reflection"
+                } else {
+                    reflection
+                }
                 saveJournalEntryUseCase(
                     JournalEntry(
                         content = content,

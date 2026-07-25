@@ -43,7 +43,7 @@ fun ReflectionScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "The session has ended.",
+            text = "Your protected time is complete.",
             style = HaoTheme.type.heading,
             color = HaoTheme.colors.ink,
             textAlign = TextAlign.Center,
@@ -57,23 +57,24 @@ fun ReflectionScreen(
             textAlign = TextAlign.Center,
         )
 
-        uiState.intention?.let { intention ->
-            Text(
-                text = "For: $intention",
-                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                style = HaoTheme.type.caption,
-                color = HaoTheme.colors.inkFaint,
-                textAlign = TextAlign.Center,
-            )
-        }
+        val prompt = uiState.intention?.let { intention ->
+            "You set this time aside for $intention.\nDid you return to it?"
+        } ?: "Is there anything you'd like to keep from this time?"
+        Text(
+            text = prompt,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+        )
 
-        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.lg))
 
         HaoTextField(
             value = uiState.reflectionText,
             onValueChange = viewModel::onReflectionChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = "How was it? (optional)",
+            placeholder = "A few words, or none",
             minLines = 2,
         )
 
@@ -88,7 +89,7 @@ fun ReflectionScreen(
 }
 
 private fun durationLine(minutes: Long): String = when (minutes) {
-    0L -> "Less than a minute protected."
-    1L -> "1 minute protected."
-    else -> "$minutes minutes protected."
+    0L -> "A few quiet minutes, kept for yourself."
+    1L -> "One minute, kept for yourself."
+    else -> "$minutes minutes, kept for yourself."
 }

@@ -71,10 +71,17 @@ class BlockingOverlayManager @Inject constructor(
     fun show(
         onUnblock: () -> Unit,
         onStepAway: () -> Unit,
+        isRelock: Boolean = false,
     ) {
         if (!canDrawOverlay() || attached) return
 
         val view = viewFor(dark = resolveDark())
+
+        // A re-lock (a temporary unblock that expired) reads differently from a first block — it
+        // acknowledges the time that passed and invites renewal rather than just "resting".
+        view.findViewById<TextView>(R.id.overlay_message).setText(
+            if (isRelock) R.string.overlay_relock_message else R.string.overlay_protected_message,
+        )
 
         // Rewire the actions each time — the callbacks close over the current blocked package.
         view.findViewById<TextView>(R.id.overlay_unblock_action)

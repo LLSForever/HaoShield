@@ -266,12 +266,17 @@ class SessionManagerImpl @Inject constructor(
             isActive = false,
         )
 
-        // A normal end offers a reflection; a start-replacement or emergency exit does not.
-        lastEndedSession = if (recordForReflection) {
+        // A normal end offers a reflection — but only occasionally, so it never becomes a chore:
+        // when the person named an intention (close that loop), or the time lasted long enough to
+        // be worth pausing over. Short, intention-less sittings end straight home.
+        val duration = (now - current.session.startedAtEpochMillis).coerceAtLeast(0L)
+        val worthReflecting = current.session.intention != null ||
+            duration >= REFLECTION_MIN_DURATION_MILLIS
+        lastEndedSession = if (recordForReflection && worthReflecting) {
             EndedSessionSummary(
                 sessionId = current.session.id,
                 mode = current.session.mode,
-                durationMillis = (now - current.session.startedAtEpochMillis).coerceAtLeast(0L),
+                durationMillis = duration,
                 intention = current.session.intention,
             )
         } else {
@@ -308,5 +313,7 @@ class SessionManagerImpl @Inject constructor(
     private companion object {
         const val TIMER_TICK_MILLIS = 1_000L
         const val INTENTION_MAX_LENGTH = 120
+        // Below this, an intention-less session ends without a reflection prompt.
+        const val REFLECTION_MIN_DURATION_MILLIS = 10 * 60 * 1_000L
     }
 }
