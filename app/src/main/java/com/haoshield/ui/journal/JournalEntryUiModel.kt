@@ -3,10 +3,19 @@ package com.haoshield.ui.journal
 import com.haoshield.domain.model.JournalEntry
 import com.haoshield.domain.model.JournalEntryType
 
+/** One sitting's worth of journal entries, so an intention, its unblocks, and its reflection read
+ *  together as a single return to yourself rather than scattered rows. */
+data class JournalSessionGroup(
+    val key: String,
+    val dateLabel: String,
+    val latestMillis: Long,
+    val entries: List<JournalEntryUiModel>,
+)
+
 data class JournalEntryUiModel(
     val id: Long,
     val content: String,
-    val formattedDate: String,
+    val formattedTime: String,
     val typeLabel: String,
     val appLabel: String?,
 ) {
@@ -22,7 +31,7 @@ fun JournalEntry.toUiModel(appLabel: String? = null): JournalEntryUiModel {
     return JournalEntryUiModel(
         id = id,
         content = content,
-        formattedDate = JournalDateFormatter.format(createdAtEpochMillis),
+        formattedTime = JournalDateFormatter.formatTime(createdAtEpochMillis),
         typeLabel = when (type) {
             JournalEntryType.UNBLOCK -> "Unblock intention"
             JournalEntryType.REFLECTION -> "Reflection"

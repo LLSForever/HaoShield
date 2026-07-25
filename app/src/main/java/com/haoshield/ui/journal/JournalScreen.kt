@@ -26,7 +26,7 @@ fun JournalScreen(
     onNavigateBack: () -> Unit,
     viewModel: JournalViewModel = hiltViewModel(),
 ) {
-    val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -51,20 +51,37 @@ fun JournalScreen(
             color = HaoTheme.colors.inkSoft,
         )
 
-        if (entries.isEmpty()) {
+        if (sessions.isEmpty()) {
             JournalEmptyState(modifier = Modifier.weight(1f))
         } else {
             LazyColumn {
-                items(entries, key = { it.id }) { entry ->
+                items(sessions, key = { it.key }) { group ->
                     Column(modifier = Modifier.animateItem()) {
-                        JournalEntryRow(entry = entry)
+                        JournalSession(group = group)
                         HorizontalDivider(
-                            modifier = Modifier.padding(vertical = HaoTheme.spacing.md),
+                            modifier = Modifier.padding(vertical = HaoTheme.spacing.lg),
                             color = HaoTheme.colors.stone,
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun JournalSession(group: JournalSessionGroup) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = group.dateLabel,
+            style = HaoTheme.type.label,
+            color = HaoTheme.colors.inkFaint,
+        )
+        group.entries.forEach { entry ->
+            JournalEntryRow(
+                entry = entry,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+            )
         }
     }
 }
@@ -100,11 +117,11 @@ private fun JournalEmptyState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun JournalEntryRow(entry: JournalEntryUiModel) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // One quiet meta line: "12 July · Unblock intention"
+private fun JournalEntryRow(entry: JournalEntryUiModel, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        // One quiet meta line within the day: "3:45 PM · Unblock intention"
         Text(
-            text = "${entry.formattedDate} · ${entry.typeLabel}",
+            text = "${entry.formattedTime} · ${entry.typeLabel}",
             style = HaoTheme.type.label,
             color = HaoTheme.colors.inkFaint,
         )
