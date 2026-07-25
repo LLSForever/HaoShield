@@ -3,6 +3,7 @@ package com.haoshield.ui.journal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.haoshield.data.util.AppLabelProvider
+import com.haoshield.domain.model.JournalRetention
 import com.haoshield.domain.repository.JournalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -12,12 +13,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class JournalViewModel @Inject constructor(
-    journalRepository: JournalRepository,
+    private val journalRepository: JournalRepository,
     private val appLabelProvider: AppLabelProvider,
 ) : ViewModel() {
+
+    init {
+        // Let go of anything past its season whenever the journal is opened — the only time it
+        // would be seen anyway, so there's no need to sweep on every launch.
+        viewModelScope.launch {
+            journalRepository.pruneEntriesBefore(
+                System.currentTimeMillis() - JournalRetention.RETAIN_MILLIS,
+            )
+        }
+    }
 
     val sessions: StateFlow<List<JournalSessionGroup>> =
         journalRepository.observeEntries()

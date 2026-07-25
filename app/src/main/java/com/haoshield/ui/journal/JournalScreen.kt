@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,21 @@ fun JournalScreen(
     viewModel: JournalViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Once there's something written, the view from the empty state's window settles into the
+        // corner of the page — the same hand, the same line. Behind the words, never in their way.
+        if (sessions.isNotEmpty()) {
+            Image(
+                painter = painterResource(R.drawable.ill_mountains),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .size(width = MOUNTAIN_WIDTH, height = MOUNTAIN_HEIGHT),
+                colorFilter = ColorFilter.tint(HaoTheme.colors.stone),
+            )
+        }
 
     Column(
         modifier = Modifier
@@ -51,7 +67,8 @@ fun JournalScreen(
         )
 
         Text(
-            text = "A quiet record of your intentions and reflections.",
+            text = "A quiet record of your intentions and reflections. Words are kept for a " +
+                "season, then let go.",
             modifier = Modifier.padding(bottom = HaoTheme.spacing.lg),
             style = HaoTheme.type.body,
             color = HaoTheme.colors.inkSoft,
@@ -73,6 +90,7 @@ fun JournalScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -93,6 +111,8 @@ private fun JournalSession(group: JournalSessionGroup) {
 }
 
 private val ILLUSTRATION_SIZE = 180.dp
+private val MOUNTAIN_WIDTH = 200.dp
+private val MOUNTAIN_HEIGHT = 105.dp
 
 @Composable
 private fun JournalEmptyState(modifier: Modifier = Modifier) {
@@ -129,7 +149,9 @@ private fun JournalEmptyState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun JournalEntryRow(entry: JournalEntryUiModel, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Older words dim towards the end of their season, so their passing is visible rather than
+    // silent — one morning they are simply no longer there, and that was never a surprise.
+    Column(modifier = modifier.fillMaxWidth().graphicsLayer { alpha = entry.alpha }) {
         // One quiet meta line within the day: "3:45 PM · Unblock intention"
         Text(
             text = "${entry.formattedTime} · ${entry.typeLabel}",

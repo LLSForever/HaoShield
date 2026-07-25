@@ -23,6 +23,9 @@ class JournalRepositoryImpl @Inject constructor(
     override suspend fun getEntry(id: Long): JournalEntry? =
         journalEntryDao.getById(id)?.toDomain()
 
+    override suspend fun pruneEntriesBefore(cutoffEpochMillis: Long) =
+        journalEntryDao.deleteOlderThan(cutoffEpochMillis)
+
     override suspend fun saveEntry(entry: JournalEntry): JournalEntry {
         return if (entry.id == 0L) {
             val insertedId = journalEntryDao.insert(entry.toEntity())

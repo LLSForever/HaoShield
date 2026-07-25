@@ -2,6 +2,7 @@ package com.haoshield.ui.journal
 
 import com.haoshield.domain.model.JournalEntry
 import com.haoshield.domain.model.JournalEntryType
+import com.haoshield.domain.model.JournalRetention
 
 /** One sitting's worth of journal entries, so an intention, its unblocks, and its reflection read
  *  together as a single return to yourself rather than scattered rows. */
@@ -18,12 +19,17 @@ data class JournalEntryUiModel(
     val formattedTime: String,
     val typeLabel: String,
     val appLabel: String?,
+    /** Dims as the entry nears the end of its season. See [JournalRetention]. */
+    val alpha: Float,
 ) {
     val isUnblockEntry: Boolean
         get() = appLabel != null
 }
 
-fun JournalEntry.toUiModel(appLabel: String? = null): JournalEntryUiModel {
+fun JournalEntry.toUiModel(
+    appLabel: String? = null,
+    nowMillis: Long = System.currentTimeMillis(),
+): JournalEntryUiModel {
     val resolvedAppLabel = unblockedPackageName?.let { packageName ->
         appLabel ?: packageName
     }
@@ -31,6 +37,7 @@ fun JournalEntry.toUiModel(appLabel: String? = null): JournalEntryUiModel {
     return JournalEntryUiModel(
         id = id,
         content = content,
+        alpha = JournalRetention.alphaForAge(nowMillis - createdAtEpochMillis),
         formattedTime = JournalDateFormatter.formatTime(createdAtEpochMillis),
         typeLabel = when (type) {
             JournalEntryType.UNBLOCK -> "Unblock intention"

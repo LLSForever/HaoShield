@@ -20,4 +20,7 @@ interface JournalEntryDao {
 
     @Update
     suspend fun update(entry: JournalEntryEntity)
+
+    @Query("DELETE FROM journal_entries WHERE createdAtEpochMillis < :cutoffEpochMillis")
+    suspend fun deleteOlderThan(cutoffEpochMillis: Long)
 }
