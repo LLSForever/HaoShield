@@ -6,21 +6,19 @@ import com.haoshield.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.random.Random
 
 @Singleton
 class AmbientMusicPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private var mediaPlayer: MediaPlayer? = null
-    private var currentTrackIndex: Int = Random.nextInt(DEFAULT_TRACKS.size)
 
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
 
     fun play() {
         val player = mediaPlayer
         if (player == null) {
-            startTrack(currentTrackIndex)
+            startTrack()
             return
         }
 
@@ -43,11 +41,10 @@ class AmbientMusicPlayer @Inject constructor(
         mediaPlayer = null
     }
 
-    private fun startTrack(index: Int) {
+    private fun startTrack() {
         stop()
-        currentTrackIndex = index
 
-        val player = MediaPlayer.create(context, DEFAULT_TRACKS[index]) ?: return
+        val player = MediaPlayer.create(context, AMBIENT_TRACK) ?: return
         player.setVolume(VOLUME, VOLUME)
         player.isLooping = true
         player.setOnErrorListener { mp, _, _ ->
@@ -60,13 +57,9 @@ class AmbientMusicPlayer @Inject constructor(
     }
 
     private companion object {
+        /** Quiet enough to sit under a room, not fill it. */
         const val VOLUME = 0.22f
 
-        val DEFAULT_TRACKS = listOf(
-            R.raw.ambient_stillness,
-            R.raw.ambient_breath,
-            R.raw.ambient_mist,
-            R.raw.ambient_soft_earth,
-        )
+        val AMBIENT_TRACK = R.raw.deep_rest
     }
 }
