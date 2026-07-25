@@ -78,6 +78,10 @@ internal object MakeShieldGuideContent {
         "Once it's printed, scan the printed code to confirm your Shield. This proves the print " +
             "really works, so you can rely on it later."
 
+    const val qrAlreadyRegistered =
+        "This is your registered Shield code — the same one your printed sheet carries. Scan it " +
+            "with any camera to begin or end protected time. Print another copy if you need one."
+
     const val qrRegisterSuccess =
         "Your printed Hǎo Shield is registered. Scan it to begin and end protected time."
 }

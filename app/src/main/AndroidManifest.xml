@@ -51,6 +51,20 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+              A printed Shield scanned by any camera opens straight here and begins or ends the
+              session. Without this the paper Shield only worked from inside the app, which made
+              it a worse ritual than the NFC tag rather than an equal one.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="shield"
+                    android:scheme="haoshield" />
+            </intent-filter>
         </activity>
 
         <service

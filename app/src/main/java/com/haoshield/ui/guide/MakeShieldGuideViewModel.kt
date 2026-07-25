@@ -41,6 +41,8 @@ data class MakeShieldGuideUiState(
     val registeredUid: String? = null,
     val qrBitmap: Bitmap? = null,
     val isGeneratingQr: Boolean = false,
+    /** The displayed code is the one already registered, not a fresh one awaiting confirmation. */
+    val isQrAlreadyRegistered: Boolean = false,
 )
 
 @HiltViewModel
@@ -114,11 +116,32 @@ class MakeShieldGuideViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Show the printed Shield code. If one is already registered this re-renders *that* code, so
+     * the sheet on the wall keeps working — generating a fresh payload here silently orphaned it
+     * the moment the new one was registered.
+     */
     fun onChooseQrMethod() {
+        showQrCode(forceNew = false)
+    }
+
+    /** Deliberate replacement. The previously printed sheet stops working once this is registered. */
+    fun onCreateNewQrCode() {
+        showQrCode(forceNew = true)
+    }
+
+    private fun showQrCode(forceNew: Boolean) {
         _uiState.update { it.copy(isGeneratingQr = true, statusMessage = null) }
         viewModelScope.launch {
-            val payload = ShieldQr.newPayload()
-            shieldTokenStore.setPendingQrPayload(payload)
+            val registered = shieldTokenStore.getRegisteredTokens()
+                .firstOrNull { it.kind == ShieldTokenKind.QR }
+                ?.id
+                ?.takeUnless { forceNew }
+
+            val payload = registered ?: ShieldQr.newPayload().also {
+                // Only an unregistered code is "pending" — it has still to prove it scans.
+                shieldTokenStore.setPendingQrPayload(it)
+            }
             val bitmap = withContext(Dispatchers.Default) {
                 qrCodeGenerator.generate(payload)
             }
@@ -127,6 +150,7 @@ class MakeShieldGuideViewModel @Inject constructor(
                     step = GuideStep.QR_DISPLAY,
                     qrBitmap = bitmap,
                     isGeneratingQr = false,
+                    isQrAlreadyRegistered = registered != null,
                 )
             }
         }

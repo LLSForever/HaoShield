@@ -92,6 +92,7 @@ fun MakeShieldGuideScreen(
                 onPrint = { uiState.qrBitmap?.let { ShieldQrPrinter.print(context, it) } },
                 onSaveImage = { uiState.qrBitmap?.let { ShieldQrSharing.share(context, it) } },
                 onConfirmScan = { onNavigateToScanner(ScanMode.REGISTRATION) },
+                onCreateNew = viewModel::onCreateNewQrCode,
                 onBack = viewModel::onBackToChooseMethod,
             )
             GuideStep.SUCCESS -> RegistrationSuccessStep(
@@ -290,6 +291,7 @@ private fun QrDisplayStep(
     onPrint: () -> Unit,
     onSaveImage: () -> Unit,
     onConfirmScan: () -> Unit,
+    onCreateNew: () -> Unit,
     onBack: () -> Unit,
 ) {
     ScreenColumn(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -335,7 +337,11 @@ private fun QrDisplayStep(
         }
 
         Text(
-            text = MakeShieldGuideContent.qrConfirmPrompt,
+            text = if (uiState.isQrAlreadyRegistered) {
+                MakeShieldGuideContent.qrAlreadyRegistered
+            } else {
+                MakeShieldGuideContent.qrConfirmPrompt
+            },
             modifier = Modifier
                 .align(Alignment.Start)
                 .padding(top = HaoTheme.spacing.lg),
@@ -345,11 +351,23 @@ private fun QrDisplayStep(
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
 
-        HaoSecondaryButton(
-            text = "I've printed it — scan to confirm",
-            onClick = onConfirmScan,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (uiState.isQrAlreadyRegistered) {
+            // Replacing is a real loss — the printed sheet stops working — so it's the quiet
+            // option, not the obvious one.
+            TextButton(onClick = onCreateNew, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Create a new code instead",
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkFaint,
+                )
+            }
+        } else {
+            HaoSecondaryButton(
+                text = "I've printed it — scan to confirm",
+                onClick = onConfirmScan,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
     }

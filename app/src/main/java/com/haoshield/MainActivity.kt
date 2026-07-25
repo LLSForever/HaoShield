@@ -23,8 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
+import com.haoshield.data.qr.ShieldQr
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldScanResult
+import com.haoshield.domain.model.ShieldToken
+import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.domain.model.ThemePreference
 import com.haoshield.domain.repository.SettingsRepository
 import com.haoshield.domain.service.NfcManager
@@ -50,14 +53,19 @@ class MainActivity : ComponentActivity() {
     // Set when the blocking overlay asks to return to the running session.
     private val pendingOpenSession = mutableStateOf(false)
 
+    // Set when a printed Shield was scanned by an outside camera app and opened us via the link.
+    private val pendingShieldPayload = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingUnblockPackage.value = intent?.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
         pendingOpenSession.value = intent?.getBooleanExtra(EXTRA_OPEN_SESSION, false) == true
-        // Consume them so a later configuration-change recreate doesn't re-navigate.
+        pendingShieldPayload.value = shieldPayloadFrom(intent)
+        // Consume them so a later configuration-change recreate doesn't re-navigate or re-scan.
         intent?.removeExtra(EXTRA_UNBLOCK_PACKAGE)
         intent?.removeExtra(EXTRA_OPEN_SESSION)
+        intent?.data = null
         setContent {
             val themePreference by settingsRepository.observeThemePreference()
                 .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
@@ -102,6 +110,8 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                // Declared before the scan below, so the collector is subscribed by the time a
+                // deep-linked scan emits — the result flow has no replay.
                 // A shield tap/scan can happen on any screen, so react to results here rather
                 // than in a single screen. Navigation on start/end; a quiet snackbar otherwise.
                 LaunchedEffect(Unit) {
@@ -141,6 +151,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // A printed Shield scanned outside the app. Handled exactly like a tag tap, so the
+                // collector above does the navigating.
+                val shieldPayload = pendingShieldPayload.value
+                LaunchedEffect(shieldPayload) {
+                    if (shieldPayload != null) {
+                        shieldScanHandler.handleScan(
+                            token = ShieldToken(ShieldTokenKind.QR, shieldPayload),
+                            mode = ScanMode.SESSION,
+                        )
+                        pendingShieldPayload.value = null
+                    }
+                }
+
                 // "Return to your session" on the boundary — go straight to the running session
                 // rather than dropping the person on Home to find their way back.
                 val openSession = pendingOpenSession.value
@@ -163,9 +186,15 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         pendingUnblockPackage.value = intent.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
         pendingOpenSession.value = intent.getBooleanExtra(EXTRA_OPEN_SESSION, false)
+        pendingShieldPayload.value = shieldPayloadFrom(intent)
         intent.removeExtra(EXTRA_UNBLOCK_PACKAGE)
         intent.removeExtra(EXTRA_OPEN_SESSION)
+        intent.data = null
     }
+
+    /** A shield link from an outside scanner, ignoring any other URI that reaches us. */
+    private fun shieldPayloadFrom(intent: Intent?): String? =
+        intent?.data?.toString()?.takeIf { ShieldQr.isShieldPayload(it) }
 
     override fun onResume() {
         super.onResume()
