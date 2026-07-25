@@ -19,10 +19,12 @@ import com.haoshield.R
  * selected per style below. Variable fonts are supported on API 26+, which is
  * our minSdk.
  *
- * Note on the 好 glyph: Noto Serif (Latin) does not contain CJK, so 好 renders
- * via the device's system serif-CJK fallback (Noto Serif CJK on virtually all
- * Android devices), which matches visually. If a guaranteed-bundled glyph is
- * ever wanted, subset a CJK serif down to 好 and add it as a third family.
+ * The 好 glyph has its own family. Noto Serif (Latin) contains no CJK, so the
+ * character used to render via whatever serif-CJK fallback the device happened
+ * to ship — which meant the app, the launcher icon and the printed sheet could
+ * each show a different 好. [NotoSerifHao] is Noto Serif SC (OFL) subset down to
+ * that single glyph, ~2KB, so it is now identical everywhere. It contains ONLY
+ * 好: never use it for text.
  */
 
 // Variable fonts: the requested FontWeight maps to the font's wght axis on API 26+ (our minSdk).
@@ -34,6 +36,9 @@ val NotoSerif = FontFamily(
     notoSerif(FontWeight.Normal),
     notoSerif(FontWeight.Medium),
 )
+
+/** Single-glyph family: 好 and nothing else. Licence in assets/licenses/NotoSerifSC-OFL.txt. */
+val NotoSerifHao = FontFamily(Font(resId = R.font.noto_serif_hao))
 
 val Inter = FontFamily(
     inter(FontWeight.Normal),
@@ -71,14 +76,14 @@ data class HaoTypography(
 
 val DefaultHaoTypography = HaoTypography(
     glyph = TextStyle(
-        fontFamily = NotoSerif,
+        fontFamily = NotoSerifHao,
         fontWeight = FontWeight.Normal,
         fontSize = 96.sp,
         lineHeight = 112.sp,
         lineHeightStyle = Trim,
     ),
     glyphSmall = TextStyle(
-        fontFamily = NotoSerif,
+        fontFamily = NotoSerifHao,
         fontWeight = FontWeight.Normal,
         fontSize = 72.sp,
         lineHeight = 84.sp,

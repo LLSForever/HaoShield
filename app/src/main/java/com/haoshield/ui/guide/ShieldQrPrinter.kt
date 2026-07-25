@@ -18,6 +18,8 @@ import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
+import androidx.core.content.res.ResourcesCompat
+import com.haoshield.R
 import java.io.FileOutputStream
 
 /**
@@ -101,10 +103,13 @@ object ShieldQrPrinter {
 
             val serif = Typeface.create(Typeface.SERIF, Typeface.NORMAL)
             val sans = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+            // The bundled single-glyph face, so the printed 好 matches the app and the icon rather
+            // than resolving to whatever CJK font this device happens to ship (often a sans).
+            val haoFace = ResourcesCompat.getFont(context, R.font.noto_serif_hao) ?: serif
 
             val glyphPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = INK
-                typeface = serif
+                typeface = haoFace
                 textAlign = Paint.Align.CENTER
                 textSize = w * 0.14f
             }
@@ -149,14 +154,22 @@ object ShieldQrPrinter {
             val afterQr = qrTop + qrSize + pad + w * 0.06f
             canvas.drawText("Cut along the line and keep it somewhere meaningful.", cx, afterQr, bodyPaint)
 
-            // Quiet footer.
-            val footerPaint = Paint(bodyPaint).apply { textSize = w * 0.024f; color = STONE_TEXT }
-            canvas.drawText(
-                "好 · Protect your attention. Return to yourself.",
-                cx,
-                canvas.height - w * 0.06f,
-                footerPaint,
-            )
+            // Quiet footer. It mixes 好 with Latin and the bundled face holds only the glyph, so
+            // it's drawn as two runs, measured and centred together as one line.
+            val footerPaint = Paint(bodyPaint).apply {
+                textSize = w * 0.024f
+                color = STONE_TEXT
+                textAlign = Paint.Align.LEFT
+            }
+            val footerGlyphPaint = Paint(footerPaint).apply { typeface = haoFace }
+            val footerGlyph = "好"
+            val footerText = " · Protect your attention. Return to yourself."
+            val glyphWidth = footerGlyphPaint.measureText(footerGlyph)
+            val footerY = canvas.height - w * 0.06f
+            var footerX = cx - (glyphWidth + footerPaint.measureText(footerText)) / 2f
+            canvas.drawText(footerGlyph, footerX, footerY, footerGlyphPaint)
+            footerX += glyphWidth
+            canvas.drawText(footerText, footerX, footerY, footerPaint)
         }
     }
 
