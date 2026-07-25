@@ -1,10 +1,21 @@
 package com.haoshield.ui.protectedscreen
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,13 +28,18 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,23 +69,47 @@ fun ProtectedScreen(
         }
     }
 
+    // Tapping empty space rests the screen — the session keeps running in the dark. Ephemeral view
+    // state on purpose: nothing outside this screen needs to know, it just has to survive rotation.
+    var resting by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Actually dim the backlight while resting, so it's darkness rather than just black pixels.
+    DisposableEffect(resting) {
+        if (resting) context.setScreenBrightness(RESTING_BRIGHTNESS)
+        onDispose {
+            // Also on dispose — leaving the screen while resting must never strand a dark display.
+            context.setScreenBrightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
+        }
+    }
+
+    // Insets sit on the children rather than the root, so the resting surface can cover the status
+    // and navigation bars too. (EmergencyExitPanel already applies its own.)
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding(),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                // Not during the emergency countdown — you shouldn't be able to black that out.
+                enabled = uiState.emergencyStep == null && !resting,
+                onClickLabel = "Rest the screen",
+            ) { resting = true },
     ) {
         AmbientMusicToggle(
             isPlaying = uiState.isAmbientMusicPlaying,
             onToggle = viewModel::onToggleAmbientMusic,
             modifier = Modifier
                 .align(Alignment.TopEnd)
+                .statusBarsPadding()
                 .padding(top = HaoTheme.spacing.md, end = HaoTheme.spacing.sm),
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = HaoTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -88,6 +128,14 @@ fun ProtectedScreen(
                 modifier = Modifier.padding(top = HaoTheme.spacing.lg),
                 style = HaoTheme.type.body,
                 color = HaoTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+            )
+
+            Text(
+                text = "Tap anywhere to rest the screen.",
+                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkFaint,
                 textAlign = TextAlign.Center,
             )
 
@@ -154,6 +202,7 @@ fun ProtectedScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(
                     bottom = HaoTheme.spacing.xl,
                     start = HaoTheme.spacing.xl,
@@ -233,6 +282,68 @@ fun ProtectedScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+
+        // Last child, and outside every inset — the dark covers the system bars too.
+        AnimatedVisibility(
+            visible = resting,
+            enter = fadeIn(animationSpec = tween(HaoMotion.SLOW)),
+            exit = fadeOut(animationSpec = tween(HaoMotion.SLOW)),
+            modifier = Modifier.matchParentSize(),
+        ) {
+            RestingSurface(onWake = { resting = false })
+        }
+    }
+}
+
+/**
+ * The screen at rest: black, with a barely-there 好 breathing so it reads as "still protected"
+ * rather than "off" or "crashed". Swallows every tap so none reaches the controls beneath.
+ */
+@Composable
+private fun RestingSurface(onWake: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "resting")
+    val glyphAlpha by transition.animateFloat(
+        initialValue = 0.10f,
+        targetValue = 0.22f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(HaoMotion.BREATH, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "glyphAlpha",
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            // Deliberately true black, not the Dusk ground: this is a screen at rest, and black is
+            // what actually turns OLED pixels off. A palette sweep should leave this alone.
+            .background(Color.Black)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = "Show the session",
+                onClick = onWake,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "好",
+            style = HaoTheme.type.glyphSmall,
+            color = HaoTheme.colors.inkSoft,
+            modifier = Modifier.graphicsLayer { alpha = glyphAlpha },
+        )
+    }
+}
+
+private const val RESTING_BRIGHTNESS = 0.01f
+
+private fun Context.setScreenBrightness(brightness: Float) {
+    val activity = generateSequence(this) { (it as? ContextWrapper)?.baseContext }
+        .filterIsInstance<Activity>()
+        .firstOrNull()
+        ?: return
+    activity.window?.let { window ->
+        window.attributes = window.attributes.apply { screenBrightness = brightness }
     }
 }
 
