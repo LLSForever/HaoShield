@@ -2,6 +2,7 @@ package com.haoshield.data.permission
 
 import android.content.Context
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import com.haoshield.data.service.accessibility.AppBlockingAccessibilityService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -25,6 +26,13 @@ class ShieldPermissions @Inject constructor(
         AppBlockingAccessibilityService.isServiceEnabled(context)
 
     fun canDrawOverlay(): Boolean = Settings.canDrawOverlays(context)
+
+    /**
+     * Whether the session notification can appear. Not required for blocking — a session runs
+     * perfectly well without it — so it is deliberately absent from [isReady].
+     */
+    fun areNotificationsEnabled(): Boolean =
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     fun isReady(): Boolean = isAccessibilityServiceEnabled() && canDrawOverlay()
 }

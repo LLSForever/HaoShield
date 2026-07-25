@@ -117,7 +117,28 @@ fun PermissionsScreen(
             },
         )
 
+        PermissionRow(
+            title = "Notifications (optional)",
+            granted = uiState.areNotificationsEnabled,
+            grantedLabel = "Allowed",
+            actionLabel = "Open notification settings",
+            onAction = {
+                context.startActivity(
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+                )
+            },
+        )
+
         Spacer(modifier = Modifier.padding(top = HaoTheme.spacing.lg))
+
+        Text(
+            text = "The session notification is optional — it holds a quiet timer so a session " +
+                "isn't forgotten. Blocking works with or without it.",
+            style = HaoTheme.type.caption,
+            color = HaoTheme.colors.inkFaint,
+            modifier = Modifier.padding(bottom = HaoTheme.spacing.md),
+        )
 
         Text(
             text = "On Android 13 and later, if the accessibility toggle looks greyed out, open " +

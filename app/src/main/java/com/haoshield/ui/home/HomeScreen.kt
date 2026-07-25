@@ -1,5 +1,10 @@
 package com.haoshield.ui.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -24,9 +29,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +50,24 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Asked at the moment it means something — you're about to begin protected time, and the
+    // notification is what will hold it. Declining is fine: the session runs regardless, just
+    // without the reminder.
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* Granted or not, the session is unaffected. */ }
+
+    fun beginWithNotificationConsent() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        viewModel.onGlyphClick()
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -76,7 +101,7 @@ fun HomeScreen(
                     interactionSource = glyphInteraction,
                     indication = null,
                     onClickLabel = "Begin protected time",
-                    onClick = viewModel::onGlyphClick,
+                    onClick = ::beginWithNotificationConsent,
                 )
                 .semantics(mergeDescendants = true) {
                     contentDescription = glyphContentDescription(uiState)

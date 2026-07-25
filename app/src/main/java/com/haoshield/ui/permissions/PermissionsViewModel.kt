@@ -15,6 +15,7 @@ data class PermissionsUiState(
     val canDrawOverlay: Boolean = false,
     val isNfcAvailable: Boolean = false,
     val isNfcEnabled: Boolean = false,
+    val areNotificationsEnabled: Boolean = false,
 )
 
 @HiltViewModel
@@ -34,6 +35,7 @@ class PermissionsViewModel @Inject constructor(
                 canDrawOverlay = shieldPermissions.canDrawOverlay(),
                 isNfcAvailable = nfcManager.isNfcAvailable(),
                 isNfcEnabled = nfcManager.isNfcEnabled(),
+                areNotificationsEnabled = shieldPermissions.areNotificationsEnabled(),
             )
         }
     }
