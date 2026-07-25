@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.haoshield.domain.Hao
 
 /**
  * 8pt grid. The larger steps exist because this app should feel emptier
@@ -40,5 +41,7 @@ object HaoMotion {
     const val STANDARD = 450   // screen content fades, expansions
     const val SLOW = 700       // entering/leaving a session
     const val GENTLE = 2000    // quote fades, ambient reveals
-    const val BREATH = 4200    // idle glyph breathing half-cycle
+
+    /** Idle breathing half-cycle. Not defined here — the app breathes at [Hao]'s pace. */
+    const val BREATH = Hao.BREATH_MILLIS
 }

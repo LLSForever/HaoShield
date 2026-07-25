@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.haoshield.domain.Hao
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 
@@ -94,6 +95,7 @@ fun HaoGlyphButton(
     val ringColor = HaoTheme.colors.stone
     val idleRingColor = HaoTheme.colors.inkSoft
     val pulseColor = HaoTheme.colors.seal
+    val inkColor = HaoTheme.colors.ink
     val glyphAlpha = if (active) 1f else breathAlpha
     val glyphScale = (if (active) 1f else breathScale) * pressScale
 
@@ -101,6 +103,15 @@ fun HaoGlyphButton(
         modifier = modifier
             .size(GLYPH_TOUCH_TARGET)
             .drawBehind {
+                // The mason's mark: a single pixel of ink at the exact centre, set beneath the
+                // glyph where it is never seen. Carvers signed the cathedral this way — for the
+                // work, not the audience. Fully present, in every state. See [Hao].
+                drawCircle(
+                    color = inkColor.copy(alpha = Hao.PRESENCE),
+                    radius = 0.5f,
+                    center = center,
+                )
+
                 val base = RING_RADIUS.toPx()
                 if (!active) {
                     // Idle: a breathing halo, so the glyph reads as pressable.
