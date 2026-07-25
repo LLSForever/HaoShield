@@ -12,10 +12,6 @@ import kotlinx.coroutines.flow.Flow
 interface SessionManager {
     fun observeSessionState(): Flow<SessionState?>
 
-    fun observeElapsedMillis(): Flow<Long>
-
-    suspend fun getSessionState(): SessionState?
-
     suspend fun getActiveSession(): Session?
 
     suspend fun startSession(mode: SessionMode): Session

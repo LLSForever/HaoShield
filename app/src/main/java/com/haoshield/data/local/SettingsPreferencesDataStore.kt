@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ThemePreference
@@ -94,6 +95,19 @@ class SettingsPreferencesDataStore @Inject constructor(
         }
     }
 
+    /**
+     * The exact packages suspended for the current strict session. Persisted so release unsuspends
+     * precisely what was suspended, even if the blocklist was edited mid-session.
+     */
+    suspend fun getStrictSuspendedPackages(): Set<String> =
+        dataStore.data.first()[Keys.STRICT_SUSPENDED].orEmpty()
+
+    suspend fun setStrictSuspendedPackages(packages: Set<String>) {
+        dataStore.edit { preferences ->
+            preferences[Keys.STRICT_SUSPENDED] = packages
+        }
+    }
+
     // --- Appearance ---
 
     fun observeThemePreference(): Flow<ThemePreference> =
@@ -131,5 +145,6 @@ class SettingsPreferencesDataStore @Inject constructor(
         val QUOTES = booleanPreferencesKey("quotes_enabled")
         val STRICT_BLOCKING = booleanPreferencesKey("strict_blocking_enabled")
         val STRICT_APPLIED = booleanPreferencesKey("strict_blocking_applied")
+        val STRICT_SUSPENDED = stringSetPreferencesKey("strict_suspended_packages")
     }
 }

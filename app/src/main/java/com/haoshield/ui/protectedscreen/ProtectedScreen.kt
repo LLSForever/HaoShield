@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -110,15 +111,24 @@ fun ProtectedScreen(
                         placeholder = "A few words, if you like",
                         minLines = 1,
                     )
-                    TextButton(
-                        onClick = viewModel::onSubmitIntention,
+                    Row(
                         modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(HaoTheme.spacing.md),
                     ) {
-                        Text(
-                            text = "Keep",
-                            style = HaoTheme.type.caption,
-                            color = HaoTheme.colors.ink,
-                        )
+                        TextButton(onClick = viewModel::onDismissIntentionPrompt) {
+                            Text(
+                                text = "Not now",
+                                style = HaoTheme.type.caption,
+                                color = HaoTheme.colors.inkFaint,
+                            )
+                        }
+                        TextButton(onClick = viewModel::onSubmitIntention) {
+                            Text(
+                                text = "Set intention",
+                                style = HaoTheme.type.caption,
+                                color = HaoTheme.colors.ink,
+                            )
+                        }
                     }
                 }
             }

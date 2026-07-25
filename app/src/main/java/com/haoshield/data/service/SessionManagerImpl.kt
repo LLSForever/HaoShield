@@ -24,9 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -63,15 +61,6 @@ class SessionManagerImpl @Inject constructor(
     }
 
     override fun observeSessionState(): Flow<SessionState?> = sessionState.asStateFlow()
-
-    override fun observeElapsedMillis(): Flow<Long> =
-        sessionState
-            .map { state ->
-                state?.elapsedMillis ?: 0L
-            }
-            .distinctUntilChanged()
-
-    override suspend fun getSessionState(): SessionState? = sessionState.value
 
     override suspend fun getActiveSession(): Session? = sessionState.value?.session
 

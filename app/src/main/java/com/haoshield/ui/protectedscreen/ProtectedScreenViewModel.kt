@@ -49,6 +49,10 @@ class ProtectedScreenViewModel @Inject constructor(
     // Once the person sets or waves away the intention prompt, it doesn't return for this session.
     private var intentionPromptDismissed: Boolean = false
 
+    // Latched true once the prompt first becomes eligible, so crossing the time window while the
+    // person is mid-thought doesn't yank the field away — only dismissing or setting it hides it.
+    private var intentionPromptActivated: Boolean = false
+
     init {
         applySessionDefaults()
         observeSession()
@@ -235,6 +239,14 @@ class ProtectedScreenViewModel @Inject constructor(
                 }
 
                 val intention = sessionState.session.intention
+                // The prompt is *offered* only early, but once offered it stays until the person
+                // sets or dismisses it — the window opens it, it doesn't slam it shut.
+                if (intention == null &&
+                    !intentionPromptDismissed &&
+                    sessionState.elapsedMillis < INTENTION_PROMPT_WINDOW_MS
+                ) {
+                    intentionPromptActivated = true
+                }
                 _uiState.update {
                     it.copy(
                         formattedElapsedTime = ProtectedTimeFormatter.format(sessionState.elapsedMillis),
@@ -242,11 +254,9 @@ class ProtectedScreenViewModel @Inject constructor(
                         isSessionActive = true,
                         isEndingSession = false,
                         intention = intention,
-                        // Offer the gentle "what is this time for?" prompt only early, and only
-                        // until an intention is set or the prompt is dismissed.
-                        showIntentionPrompt = intention == null &&
-                            !intentionPromptDismissed &&
-                            sessionState.elapsedMillis < INTENTION_PROMPT_WINDOW_MS,
+                        showIntentionPrompt = intentionPromptActivated &&
+                            intention == null &&
+                            !intentionPromptDismissed,
                     )
                 }
                 startQuoteRotation()

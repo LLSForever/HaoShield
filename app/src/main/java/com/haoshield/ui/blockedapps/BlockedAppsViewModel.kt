@@ -6,8 +6,10 @@ import com.haoshield.data.util.AppLabelProvider
 import com.haoshield.domain.repository.BlockingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,6 +42,8 @@ class BlockedAppsViewModel @Inject constructor(
     val uiState: StateFlow<BlockedAppsUiState> =
         blockingRepository.observeBlockedPackageNames()
             .map { blocked -> buildState(blocked) }
+            // Label lookups hit PackageManager; keep them off the main thread.
+            .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BlockedAppsUiState())
 
     fun onToggle(packageName: String, blocked: Boolean) {

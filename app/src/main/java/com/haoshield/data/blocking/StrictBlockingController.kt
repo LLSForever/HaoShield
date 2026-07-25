@@ -49,21 +49,33 @@ class StrictBlockingController @Inject constructor(
         if (!settings.isStrictBlockingEnabled()) return
         if (!rootShell.isRootBinaryPresent()) return
 
-        val ok = rootShell.exec(blockedPackages().map { suspendCommand(it) })
-        if (ok) settings.setStrictApplied(true)
+        val packages = blockedPackages().toSet()
+        val ok = rootShell.exec(packages.map { suspendCommand(it) })
+        if (ok) {
+            // Record exactly what we suspended, so release unsuspends precisely these even if the
+            // blocklist is edited during the session.
+            settings.setStrictSuspendedPackages(packages)
+            settings.setStrictApplied(true)
+        }
     }
 
     /**
      * Release every suspension. Safe to call unconditionally — only does work if we applied.
-     * The "applied" flag is cleared ONLY when the unsuspend actually succeeds; otherwise it is left
-     * set so a later release (session end, toggle off, next-launch cleanup) retries, rather than
-     * stranding the apps OS-suspended with no in-app path back.
+     * Unsuspends exactly the packages we recorded at apply time (not the current blocklist, which
+     * may have been edited). The "applied" flag is cleared ONLY when the unsuspend actually
+     * succeeds; otherwise it is left set so a later release retries, rather than stranding apps
+     * OS-suspended with no in-app path back.
      */
     suspend fun releaseAll() {
         cancelAllResuspends()
         if (!settings.isStrictApplied()) return
-        val ok = rootShell.exec(blockedPackages().map { unsuspendCommand(it) })
-        if (ok) settings.setStrictApplied(false)
+        val suspended = settings.getStrictSuspendedPackages()
+            .ifEmpty { blockedPackages().toSet() }
+        val ok = rootShell.exec(suspended.map { unsuspendCommand(it) })
+        if (ok) {
+            settings.setStrictApplied(false)
+            settings.setStrictSuspendedPackages(emptySet())
+        }
     }
 
     /**

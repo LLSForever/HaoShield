@@ -67,7 +67,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         val canHide = type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
 
         serviceScope.launch {
-            handleForegroundPackage(packageName, canHide)
+            onForegroundEvent(packageName, canHide)
         }
     }
 
@@ -98,8 +98,17 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    private suspend fun handleForegroundPackage(packageName: String, canHide: Boolean) {
+    /**
+     * Entry point for a real foreground change: cancels any pending allowance re-check first, then
+     * evaluates. The scheduled re-check calls [evaluate] directly (never this) so it can't cancel
+     * the very coroutine it is running on.
+     */
+    private suspend fun onForegroundEvent(packageName: String, canHide: Boolean) {
         recheckJob?.cancel()
+        evaluate(packageName, canHide)
+    }
+
+    private suspend fun evaluate(packageName: String, canHide: Boolean) {
         when {
             // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
             packageName == applicationContext.packageName -> return
@@ -124,8 +133,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             delay(remaining + RECHECK_SLACK_MILLIS)
             val current = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
                 ?: packageName
-            // Re-assert only (canHide = false) — consistent with the anti-flicker rule.
-            handleForegroundPackage(current, canHide = false)
+            // Re-assert only (canHide = false), and via evaluate() so we don't cancel ourselves.
+            evaluate(current, canHide = false)
         }
     }
 
