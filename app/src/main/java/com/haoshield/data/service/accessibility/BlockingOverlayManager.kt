@@ -71,6 +71,7 @@ class BlockingOverlayManager @Inject constructor(
     fun show(
         onUnblock: () -> Unit,
         onStepAway: () -> Unit,
+        onOpenSession: () -> Unit,
         isRelock: Boolean = false,
     ) {
         if (!canDrawOverlay() || attached) return
@@ -88,6 +89,8 @@ class BlockingOverlayManager @Inject constructor(
             .setOnClickListener { onUnblock() }
         view.findViewById<TextView>(R.id.overlay_step_away_action)
             .setOnClickListener { onStepAway() }
+        view.findViewById<TextView>(R.id.overlay_open_session_action)
+            .setOnClickListener { onOpenSession() }
 
         runCatching { windowManager.addView(view, overlayParams) }
             .onSuccess { attached = true }

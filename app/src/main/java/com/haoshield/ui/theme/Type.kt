@@ -56,6 +56,8 @@ data class HaoTypography(
     val glyph: TextStyle,
     /** A smaller 好 for heroes, stamps, and empty states. */
     val glyphSmall: TextStyle,
+    /** 好 as a quiet mark accompanying other content, rather than as the hero. */
+    val glyphMark: TextStyle,
     /** The session clock and emergency countdown digits. */
     val timer: TextStyle,
     /** The quiet running session clock. Smaller than [timer] — it sits with you, it doesn't count. */
@@ -87,6 +89,13 @@ val DefaultHaoTypography = HaoTypography(
         fontWeight = FontWeight.Normal,
         fontSize = 72.sp,
         lineHeight = 84.sp,
+        lineHeightStyle = Trim,
+    ),
+    glyphMark = TextStyle(
+        fontFamily = NotoSerifHao,
+        fontWeight = FontWeight.Normal,
+        fontSize = 40.sp,
+        lineHeight = 48.sp,
         lineHeightStyle = Trim,
     ),
     timer = TextStyle(

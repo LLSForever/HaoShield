@@ -7,7 +7,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -15,14 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
@@ -30,22 +26,22 @@ import com.haoshield.ui.theme.HaoTheme
 /**
  * The 好 glyph, which is the app's single primary action.
  *
- * At idle it breathes — a barely-perceptible alpha and scale cycle that signals liveness without
- * demanding attention. During an active session the breathing stops and a faint concentric ring
- * sits behind the glyph, with a second ring that slowly expands and fades as a quiet pulse.
+ * At idle it breathes — a barely-perceptible alpha and scale cycle — inside a soft ring that
+ * breathes with it, so the glyph reads as something you can press rather than a decoration.
+ * During an active session the breathing stops, the ring steadies, and a second ring slowly
+ * expands and fades as a quiet pulse.
  *
+ * This is deliberately a *visual*, not a button: the caller owns the click and passes its
+ * [interactionSource] in, so the tap target can extend past the glyph to include its label.
  * No ripple (suppressed globally in [HaoTheme]); press feedback is a small scale-down.
  */
 @Composable
 fun HaoGlyphButton(
     active: Boolean,
-    contentDescription: String,
-    onClick: () -> Unit,
+    interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-
     val transition = rememberInfiniteTransition(label = "glyph")
 
     val breathAlpha by transition.animateFloat(
@@ -67,6 +63,17 @@ fun HaoGlyphButton(
         label = "breathScale",
     )
 
+    // The idle ring's presence rises and falls with the breath — an affordance that stays calm.
+    val idleRingAlpha by transition.animateFloat(
+        initialValue = 0.14f,
+        targetValue = 0.38f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(HaoMotion.BREATH, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "idleRingAlpha",
+    )
+
     // The slow expanding pulse behind an active session. Runs 0 → 1 and restarts.
     val pulse by transition.animateFloat(
         initialValue = 0f,
@@ -85,6 +92,7 @@ fun HaoGlyphButton(
     )
 
     val ringColor = HaoTheme.colors.stone
+    val idleRingColor = HaoTheme.colors.inkSoft
     val pulseColor = HaoTheme.colors.seal
     val glyphAlpha = if (active) 1f else breathAlpha
     val glyphScale = (if (active) 1f else breathScale) * pressScale
@@ -92,15 +100,18 @@ fun HaoGlyphButton(
     Box(
         modifier = modifier
             .size(GLYPH_TOUCH_TARGET)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            )
-            .semantics { this.contentDescription = contentDescription }
             .drawBehind {
-                if (!active) return@drawBehind
                 val base = RING_RADIUS.toPx()
+                if (!active) {
+                    // Idle: a breathing halo, so the glyph reads as pressable.
+                    drawCircle(
+                        color = idleRingColor.copy(alpha = idleRingAlpha),
+                        radius = base,
+                        center = center,
+                        style = Stroke(width = 1.dp.toPx()),
+                    )
+                    return@drawBehind
+                }
                 // Steady inner ring.
                 drawCircle(
                     color = ringColor,

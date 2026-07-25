@@ -7,4 +7,5 @@
     <string name="overlay_relock_message">Your time with this app has passed.\nStep away, or renew your intention.</string>
     <string name="overlay_unblock_action">Unblock with intention</string>
     <string name="overlay_step_away_action">Step away</string>
+    <string name="overlay_open_session_action">Return to your session</string>
 </resources>

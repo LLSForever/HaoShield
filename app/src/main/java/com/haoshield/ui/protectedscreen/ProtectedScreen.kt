@@ -114,6 +114,15 @@ fun ProtectedScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            // The session is the one place the mark was missing, which left this screen feeling
+            // detached from the rest of the app. Quiet enough not to compete with the clock.
+            Text(
+                text = "好",
+                modifier = Modifier.padding(bottom = HaoTheme.spacing.lg),
+                style = HaoTheme.type.glyphMark,
+                color = HaoTheme.colors.inkFaint,
+            )
+
             Text(
                 text = uiState.formattedElapsedTime,
                 style = HaoTheme.type.clock,
@@ -303,8 +312,8 @@ fun ProtectedScreen(
 private fun RestingSurface(onWake: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "resting")
     val glyphAlpha by transition.animateFloat(
-        initialValue = 0.10f,
-        targetValue = 0.22f,
+        initialValue = 0.20f,
+        targetValue = 0.38f,
         animationSpec = infiniteRepeatable(
             animation = tween(HaoMotion.BREATH, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse,

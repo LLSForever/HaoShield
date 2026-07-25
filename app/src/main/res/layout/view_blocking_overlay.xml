@@ -77,5 +77,21 @@
             android:text="@string/overlay_step_away_action"
             android:textColor="@color/hao_ink_soft"
             android:textSize="14sp" />
+
+        <!-- Step away goes to the launcher; this goes back to the running session, so the
+             boundary isn't a dead end that forces a trip through Home. -->
+        <TextView
+            android:id="@+id/overlay_open_session_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/inter_variable"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="@string/overlay_open_session_action"
+            android:textColor="@color/hao_ink_soft"
+            android:textSize="14sp" />
     </LinearLayout>
 </FrameLayout>

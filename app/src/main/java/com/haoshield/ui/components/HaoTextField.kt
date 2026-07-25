@@ -1,13 +1,20 @@
 package com.haoshield.ui.components
 
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.haoshield.ui.theme.HaoTheme
 
-/** The app's one text-input treatment: card shape, ink cursor, stone resting border. */
+/**
+ * The app's one text-input treatment: card shape, ink cursor, stone resting border.
+ *
+ * Every field in the app takes prose — an intention, a reflection, a note to pass a boundary — so
+ * sentence capitalisation is the default rather than something each call site remembers.
+ */
 @Composable
 fun HaoTextField(
     value: String,
@@ -32,6 +39,7 @@ fun HaoTextField(
             }
         },
         textStyle = HaoTheme.type.body,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         shape = HaoTheme.shapes.card,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = HaoTheme.colors.ink,

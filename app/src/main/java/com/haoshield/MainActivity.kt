@@ -47,12 +47,17 @@ class MainActivity : ComponentActivity() {
     // Set when the blocking overlay asks us to open the unblock screen for a specific app.
     private val pendingUnblockPackage = mutableStateOf<String?>(null)
 
+    // Set when the blocking overlay asks to return to the running session.
+    private val pendingOpenSession = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingUnblockPackage.value = intent?.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
-        // Consume it so a later configuration-change recreate doesn't re-open the unblock screen.
+        pendingOpenSession.value = intent?.getBooleanExtra(EXTRA_OPEN_SESSION, false) == true
+        // Consume them so a later configuration-change recreate doesn't re-navigate.
         intent?.removeExtra(EXTRA_UNBLOCK_PACKAGE)
+        intent?.removeExtra(EXTRA_OPEN_SESSION)
         setContent {
             val themePreference by settingsRepository.observeThemePreference()
                 .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
@@ -135,6 +140,19 @@ class MainActivity : ComponentActivity() {
                         pendingUnblockPackage.value = null
                     }
                 }
+
+                // "Return to your session" on the boundary — go straight to the running session
+                // rather than dropping the person on Home to find their way back.
+                val openSession = pendingOpenSession.value
+                LaunchedEffect(openSession) {
+                    if (openSession) {
+                        navController.navigate(Route.Protected.path) {
+                            popUpTo(Route.Home.path) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                        pendingOpenSession.value = false
+                    }
+                }
                 }
             }
         }
@@ -144,7 +162,9 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingUnblockPackage.value = intent.getStringExtra(EXTRA_UNBLOCK_PACKAGE)
+        pendingOpenSession.value = intent.getBooleanExtra(EXTRA_OPEN_SESSION, false)
         intent.removeExtra(EXTRA_UNBLOCK_PACKAGE)
+        intent.removeExtra(EXTRA_OPEN_SESSION)
     }
 
     override fun onResume() {
@@ -164,5 +184,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_UNBLOCK_PACKAGE = "com.haoshield.extra.UNBLOCK_PACKAGE"
+        const val EXTRA_OPEN_SESSION = "com.haoshield.extra.OPEN_SESSION"
     }
 }

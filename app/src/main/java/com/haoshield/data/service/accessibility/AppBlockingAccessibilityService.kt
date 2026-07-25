@@ -160,6 +160,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 hideBoundary()
                 performGlobalAction(GLOBAL_ACTION_HOME)
             },
+            onOpenSession = {
+                hideBoundary()
+                launchSession()
+            },
             isRelock = isRelock,
         )
     }
@@ -173,6 +177,15 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             putExtra(MainActivity.EXTRA_UNBLOCK_PACKAGE, packageName)
+        }
+        startActivity(intent)
+    }
+
+    /** Open the running session directly, rather than leaving the person on Home to find it. */
+    private fun launchSession() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(MainActivity.EXTRA_OPEN_SESSION, true)
         }
         startActivity(intent)
     }

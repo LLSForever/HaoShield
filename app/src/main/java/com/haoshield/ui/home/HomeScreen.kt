@@ -5,6 +5,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,8 +21,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -60,24 +65,41 @@ fun HomeScreen(
     ) {
         Spacer(modifier = Modifier.weight(1f))
 
-        HaoGlyphButton(
-            active = uiState.phase == HomePhase.Active,
-            contentDescription = glyphContentDescription(uiState),
-            onClick = viewModel::onGlyphClick,
-        )
-
-        Crossfade(
-            targetState = subtitleFor(uiState),
-            animationSpec = tween(HaoMotion.STANDARD),
-            label = "subtitle",
-        ) { subtitle ->
-            Text(
-                text = subtitle,
-                style = HaoTheme.type.caption,
-                color = HaoTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+        // The glyph and its label are one target: "Tap to begin" sitting outside the tap zone was
+        // the thing people actually aimed at. The shared interactionSource means pressing the
+        // label still drives the glyph's press feedback.
+        val glyphInteraction = remember { MutableInteractionSource() }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .clickable(
+                    interactionSource = glyphInteraction,
+                    indication = null,
+                    onClickLabel = "Begin protected time",
+                    onClick = viewModel::onGlyphClick,
+                )
+                .semantics(mergeDescendants = true) {
+                    contentDescription = glyphContentDescription(uiState)
+                },
+        ) {
+            HaoGlyphButton(
+                active = uiState.phase == HomePhase.Active,
+                interactionSource = glyphInteraction,
             )
+
+            Crossfade(
+                targetState = subtitleFor(uiState),
+                animationSpec = tween(HaoMotion.STANDARD),
+                label = "subtitle",
+            ) { subtitle ->
+                Text(
+                    text = subtitle,
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkSoft,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.md),
+                )
+            }
         }
 
         if (uiState.phase == HomePhase.AwaitingShield) {
