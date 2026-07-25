@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "HaoShield"
 include(":app")
+include(":shared:domain")
