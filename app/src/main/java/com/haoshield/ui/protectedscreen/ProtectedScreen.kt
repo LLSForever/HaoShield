@@ -76,8 +76,11 @@ fun ProtectedScreen(
         ) {
             Text(
                 text = uiState.formattedElapsedTime,
-                style = HaoTheme.type.timer,
+                style = HaoTheme.type.clock,
                 color = HaoTheme.colors.ink,
+                // Never let a long duration wrap onto a second line.
+                maxLines = 1,
+                softWrap = false,
             )
 
             Text(

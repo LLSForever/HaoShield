@@ -53,6 +53,8 @@ data class HaoTypography(
     val glyphSmall: TextStyle,
     /** The session clock and emergency countdown digits. */
     val timer: TextStyle,
+    /** The quiet running session clock. Smaller than [timer] — it sits with you, it doesn't count. */
+    val clock: TextStyle,
     /** Screen titles: "Hǎo Shield", "Make Your Own Shield". */
     val display: TextStyle,
     /** Section headings within a screen. */
@@ -88,6 +90,14 @@ val DefaultHaoTypography = HaoTypography(
         fontSize = 72.sp,
         lineHeight = 84.sp,
         letterSpacing = 2.sp,
+        lineHeightStyle = Trim,
+    ),
+    clock = TextStyle(
+        fontFamily = NotoSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 44.sp,
+        lineHeight = 52.sp,
+        letterSpacing = 1.sp,
         lineHeightStyle = Trim,
     ),
     display = TextStyle(

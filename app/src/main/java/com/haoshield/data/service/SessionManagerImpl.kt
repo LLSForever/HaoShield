@@ -180,15 +180,20 @@ class SessionManagerImpl @Inject constructor(
 
     private suspend fun restoreFromSnapshot(snapshot: PersistedSessionSnapshot?) {
         if (snapshot == null) {
-            sessionState.value = null
-            stopTimer()
-            // If a strict session was suspended when the process was killed, release it now so the
-            // user isn't left with apps stuck suspended and no session to end.
-            strictBlockingController.releaseAll()
+            discardPersistedSession()
             return
         }
 
         val elapsed = System.currentTimeMillis() - snapshot.session.startedAtEpochMillis
+        // A snapshot claiming an impossible age is not a real session — it means the device clock
+        // moved (or the store outlived the install that wrote it). Restoring it would show a
+        // nonsense clock counting hundreds of hours, so let it go rather than resurrect it.
+        if (elapsed < -CLOCK_SKEW_TOLERANCE_MILLIS || elapsed > MAX_SESSION_AGE_MILLIS) {
+            discardPersistedSession()
+            sessionPreferencesDataStore.clearSession()
+            return
+        }
+
         val now = System.currentTimeMillis()
         sessionState.value = SessionState(
             session = snapshot.session,
@@ -198,6 +203,16 @@ class SessionManagerImpl @Inject constructor(
                 .filterValues { it > now },
         )
         startTimer(snapshot.session.startedAtEpochMillis)
+    }
+
+    /**
+     * Leave no session running, and release any strict suspensions — otherwise a process killed
+     * mid-session would leave apps OS-suspended with no session to end.
+     */
+    private suspend fun discardPersistedSession() {
+        sessionState.value = null
+        stopTimer()
+        strictBlockingController.releaseAll()
     }
 
     private suspend fun endSoftwareSession(method: SessionEndMethod): SessionEndResult {
@@ -315,5 +330,9 @@ class SessionManagerImpl @Inject constructor(
         const val INTENTION_MAX_LENGTH = 120
         // Below this, an intention-less session ends without a reflection prompt.
         const val REFLECTION_MIN_DURATION_MILLIS = 10 * 60 * 1_000L
+        // A restored session older than this is treated as stale rather than resurrected.
+        const val MAX_SESSION_AGE_MILLIS = 7 * 24 * 60 * 60 * 1_000L
+        // Small allowance for the device clock drifting backwards.
+        const val CLOCK_SKEW_TOLERANCE_MILLIS = 5 * 60 * 1_000L
     }
 }

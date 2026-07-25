@@ -26,7 +26,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.haoshield.ui.components.HaoPrimaryButton
@@ -82,7 +81,7 @@ fun IntroScreen(
             selected = pagerState.currentPage,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = HaoTheme.spacing.lg),
+                .padding(top = HaoTheme.spacing.md),
         )
 
         Box(
@@ -90,7 +89,7 @@ fun IntroScreen(
                 .fillMaxWidth()
                 .padding(
                     horizontal = HaoTheme.spacing.screenH,
-                    vertical = HaoTheme.spacing.xl,
+                    vertical = HaoTheme.spacing.lg,
                 ),
             contentAlignment = Alignment.Center,
         ) {
@@ -113,37 +112,37 @@ fun IntroScreen(
 
 @Composable
 private fun IntroPageContent(page: IntroPage) {
+    // Left-aligned and set at reading size: these pages carry real paragraphs, and centred display
+    // type overflowed the shorter screens. Reads as a page of a book rather than a splash.
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = HaoTheme.spacing.screenH),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Center,
     ) {
         if (page.showGlyph) {
-            Text(text = "好", style = HaoTheme.type.glyph, color = HaoTheme.colors.ink)
-            Spacer(modifier = Modifier.height(HaoTheme.spacing.lg))
+            Text(text = "好", style = HaoTheme.type.glyphSmall, color = HaoTheme.colors.ink)
+            Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
         }
 
         Text(
             text = page.title,
             style = HaoTheme.type.display,
             color = HaoTheme.colors.ink,
-            textAlign = TextAlign.Center,
         )
 
         page.paragraphs.forEach { paragraph ->
             Text(
                 text = paragraph,
-                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
-                style = HaoTheme.type.voice,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+                style = HaoTheme.type.body,
                 color = HaoTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
             )
         }
 
-        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
     }
 }
 
