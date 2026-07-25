@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.theme.HaoTheme
 
 @Composable
@@ -52,12 +53,7 @@ fun PermissionsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = HaoTheme.spacing.screenH),
     ) {
-        TextButton(
-            onClick = onNavigateBack,
-            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-        ) {
-            Text(text = "Back", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
-        }
+        HaoBackLink(onClick = onNavigateBack)
 
         Text(
             text = "Permissions",
