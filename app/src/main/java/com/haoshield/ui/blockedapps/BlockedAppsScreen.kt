@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoSectionLabel
@@ -33,6 +35,11 @@ fun BlockedAppsScreen(
     viewModel: BlockedAppsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Re-read the device on every resume, so an app installed since you last looked shows up.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refresh()
+    }
 
     Column(
         modifier = Modifier
@@ -57,6 +64,14 @@ fun BlockedAppsScreen(
             modifier = Modifier.padding(top = HaoTheme.spacing.md),
         )
 
+        Text(
+            text = "Only apps on this phone are listed. Anything else in these groups stays " +
+                "covered, and appears here if you install it.",
+            style = HaoTheme.type.caption,
+            color = HaoTheme.colors.inkFaint,
+            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+        )
+
         uiState.sections.forEach { section ->
             HaoSectionLabel(section.title.uppercase(), topDivider = true)
             section.rows.forEach { row ->
@@ -78,7 +93,7 @@ fun BlockedAppsScreen(
             Text(text = "Add another app", style = HaoTheme.type.body, color = HaoTheme.colors.ink)
         }
 
-        if (uiState.totalBlocked == 0) {
+        if (!uiState.isLoading && uiState.totalBlocked == 0) {
             Text(
                 text = "Nothing is blocked right now. Sessions will hold nothing back.",
                 style = HaoTheme.type.caption,

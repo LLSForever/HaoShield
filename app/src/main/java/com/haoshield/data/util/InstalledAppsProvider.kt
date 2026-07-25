@@ -36,4 +36,8 @@ class InstalledAppsProvider @Inject constructor(
             .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase() }
     }
+
+    /** Which packages are actually on this device, for filtering lists down to what's real. */
+    suspend fun getInstalledPackageNames(): Set<String> =
+        getLaunchableApps().mapTo(mutableSetOf()) { it.packageName }
 }
