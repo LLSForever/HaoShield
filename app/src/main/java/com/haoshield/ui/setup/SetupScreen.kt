@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,6 +30,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoPrimaryButton
+import com.haoshield.ui.components.HaoTextLink
 import com.haoshield.ui.theme.HaoTheme
 
 @Composable
@@ -166,13 +166,10 @@ private fun SetupStep(
                     color = HaoTheme.colors.ink,
                 )
             } else {
-                TextButton(onClick = onOpenSettings) {
-                    Text(
-                        text = "Open settings",
-                        style = HaoTheme.type.label,
-                        color = HaoTheme.colors.ink,
-                    )
-                }
+                HaoTextLink(
+                    text = "Open settings",
+                    onClick = onOpenSettings,
+                )
             }
         }
     }

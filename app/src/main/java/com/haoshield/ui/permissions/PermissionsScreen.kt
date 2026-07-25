@@ -31,6 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.ui.components.HaoBackLink
+import com.haoshield.ui.components.HaoTextLink
 import com.haoshield.ui.theme.HaoTheme
 
 @Composable
@@ -200,16 +201,11 @@ private fun PermissionRow(
                     color = HaoTheme.colors.ink,
                 )
             } else if (actionEnabled) {
-                TextButton(
+                HaoTextLink(
+                    text = actionLabel,
                     onClick = onAction,
                     modifier = Modifier.padding(top = HaoTheme.spacing.xs),
-                ) {
-                    Text(
-                        text = actionLabel,
-                        style = HaoTheme.type.label,
-                        color = HaoTheme.colors.ink,
-                    )
-                }
+                )
             } else {
                 Text(
                     text = actionLabel,

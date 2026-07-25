@@ -10,14 +10,28 @@ import androidx.compose.ui.unit.sp
 import com.haoshield.R
 
 /**
- * Two families, a small set of sizes.
+ * Two families, a small set of sizes, set like a book rather than a dashboard.
  *
  * Serif carries the voice of the app (headings, the glyph, quotes).
  * Sans carries information (body, labels, settings).
  *
- * Both are variable OFL fonts (single file per family); the weight axis is
- * selected per style below. Variable fonts are supported on API 26+, which is
- * our minSdk.
+ * The reading sizes sit on the traditional printers' scale — the sequence
+ * (…, 12, 14, 16, 18, 21, 24, 36, 48, 60, 72) that book typography settled on
+ * over five centuries, for the same reason musical intervals settled: steps
+ * that are unmistakably distinct without shouting. Leading follows classical
+ * practice: body text at one-and-a-half (the canonical book ratio), headings
+ * and display tighter (large type needs less air), small text and the app's
+ * voice looser. All leadings are multiples of 4sp, so text and the 8pt spacing
+ * grid share a vertical rhythm.
+ *
+ * The numeric display cuts (clock, timer) are the exception, sized by eye —
+ * which is itself the tradition; display type was always cut optically. They
+ * request tabular figures so the digits sit in fixed columns and a ticking
+ * second doesn't make the line shimmy.
+ *
+ * Both text families are variable OFL fonts (single file per family); the
+ * weight axis is selected per style below. Variable fonts are supported on
+ * API 26+, which is our minSdk.
  *
  * The 好 glyph has its own family. Noto Serif (Latin) contains no CJK, so the
  * character used to render via whatever serif-CJK fallback the device happened
@@ -94,8 +108,8 @@ val DefaultHaoTypography = HaoTypography(
     glyphMark = TextStyle(
         fontFamily = NotoSerifHao,
         fontWeight = FontWeight.Normal,
-        fontSize = 40.sp,
-        lineHeight = 48.sp,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
         lineHeightStyle = Trim,
     ),
     timer = TextStyle(
@@ -104,6 +118,8 @@ val DefaultHaoTypography = HaoTypography(
         fontSize = 72.sp,
         lineHeight = 84.sp,
         letterSpacing = 2.sp,
+        // Fixed-width digits: the countdown must not shimmy as it falls.
+        fontFeatureSettings = "tnum",
         lineHeightStyle = Trim,
     ),
     clock = TextStyle(
@@ -112,42 +128,44 @@ val DefaultHaoTypography = HaoTypography(
         fontSize = 44.sp,
         lineHeight = 52.sp,
         letterSpacing = 1.sp,
+        // Fixed-width digits: a ticking second shouldn't nudge the minutes around.
+        fontFeatureSettings = "tnum",
         lineHeightStyle = Trim,
     ),
     display = TextStyle(
         fontFamily = NotoSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 40.sp,
-        lineHeight = 52.sp,
-        letterSpacing = (-0.5).sp,
+        fontSize = 36.sp,
+        lineHeight = 44.sp, // 1.22 — display type carries less air
+        letterSpacing = (-0.4).sp, // large serif tracks slightly tight
         lineHeightStyle = Trim,
     ),
     heading = TextStyle(
         fontFamily = NotoSerif,
         fontWeight = FontWeight.Medium,
-        fontSize = 20.sp,
-        lineHeight = 28.sp,
+        fontSize = 18.sp,
+        lineHeight = 24.sp, // 1.33 — headings lead tighter than text
         lineHeightStyle = Trim,
     ),
     voice = TextStyle(
         fontFamily = NotoSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 36.sp, // 1.6 — deliberately loose
+        fontSize = 21.sp,
+        lineHeight = 32.sp, // 1.52 — deliberately loose; the app speaking slowly
         lineHeightStyle = Trim,
     ),
     body = TextStyle(
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 26.sp,
+        lineHeight = 24.sp, // 1.5 — the canonical book ratio
         lineHeightStyle = Trim,
     ),
     caption = TextStyle(
         fontFamily = Inter,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 22.sp,
+        lineHeight = 20.sp, // 1.43 — small text, slightly looser than body's ratio at size
         lineHeightStyle = Trim,
     ),
     label = TextStyle(
@@ -155,7 +173,7 @@ val DefaultHaoTypography = HaoTypography(
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 1.2.sp,
+        letterSpacing = 1.2.sp, // 0.1em — the classical rule for letterspaced capitals
         lineHeightStyle = Trim,
     ),
 )

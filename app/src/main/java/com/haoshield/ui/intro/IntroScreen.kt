@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.haoshield.ui.components.HaoPrimaryButton
+import com.haoshield.ui.components.HaoTextLink
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 import kotlinx.coroutines.launch
@@ -57,14 +58,16 @@ fun IntroScreen(
         // Skip — quiet, top-right, gone on the last page where "Begin" takes over.
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = HaoTheme.spacing.screenH)) {
             if (!isLastPage) {
-                TextButton(
+                HaoTextLink(
+                    text = "Skip",
                     onClick = ::finish,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(top = HaoTheme.spacing.sm),
-                ) {
-                    Text(text = "Skip", style = HaoTheme.type.caption, color = HaoTheme.colors.inkFaint)
-                }
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkFaint,
+                    alignEnd = true,
+                )
             }
         }
 
