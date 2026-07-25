@@ -17,6 +17,7 @@ import com.haoshield.ui.blockedapps.BlockedAppsScreen
 import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
 import com.haoshield.ui.intro.IntroScreen
+import com.haoshield.ui.onboarding.GettingStartedScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
 import com.haoshield.ui.permissions.PermissionsScreen
@@ -47,10 +48,26 @@ fun HaoShieldNavHost(
                         // Replayed from Settings — just return.
                         navController.popBackStack()
                     } else {
-                        // First run — replace the intro with Home.
-                        navController.navigate(Route.Home.path) {
+                        // First run — bridge the philosophy to the practice.
+                        navController.navigate(Route.GettingStarted.path) {
                             popUpTo(Route.Intro.path) { inclusive = true }
                         }
+                    }
+                },
+            )
+        }
+        composable(Route.GettingStarted.path) {
+            GettingStartedScreen(
+                onMakeShield = {
+                    // Land on Home first so the guide's back returns there, then open the guide.
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.GettingStarted.path) { inclusive = true }
+                    }
+                    navController.navigate(Route.Guide.path)
+                },
+                onBeginLightly = {
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.GettingStarted.path) { inclusive = true }
                     }
                 },
             )

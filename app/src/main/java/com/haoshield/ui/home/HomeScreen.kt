@@ -121,8 +121,23 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
+        // Keep the physical ritual discoverable for anyone who hasn't made a Shield yet, rather
+        // than leaving it buried in Settings.
+        if (uiState.phase == HomePhase.Idle && !uiState.hasAnyToken) {
+            TextButton(onClick = viewModel::onMakeShield) {
+                Text(
+                    text = "Make your Hǎo Shield",
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.ink,
+                )
+            }
+        }
+
         Row(
-            modifier = Modifier.padding(bottom = HaoTheme.spacing.xl),
+            modifier = Modifier.padding(
+                top = HaoTheme.spacing.sm,
+                bottom = HaoTheme.spacing.xl,
+            ),
             horizontalArrangement = Arrangement.spacedBy(HaoTheme.spacing.lg),
         ) {
             TextButton(onClick = { onNavigate(Route.Journal.path) }) {

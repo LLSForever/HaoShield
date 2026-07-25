@@ -137,6 +137,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Discovery affordance for users who haven't made a Shield yet. */
+    fun onMakeShield() {
+        emit(HomeEvent.NavigateToGuide)
+    }
+
     /** User wants to end the "hold your Shield" prompt without tapping. */
     fun onCancelAwaiting() {
         local.update { it.copy(awaiting = false) }

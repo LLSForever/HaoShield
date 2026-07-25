@@ -6,6 +6,8 @@ import com.haoshield.domain.model.ScanMode
 sealed class Route(val path: String) {
     data object Intro : Route("intro")
 
+    data object GettingStarted : Route("getting_started")
+
     data object Home : Route("home")
 
     data object Setup : Route("setup")
