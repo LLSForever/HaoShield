@@ -35,6 +35,7 @@ import com.haoshield.domain.model.SessionEndMethod
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.domain.model.ShieldToken
+import com.haoshield.desktop.startup.WindowsAutostart
 import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoSecondaryButton
@@ -274,6 +275,29 @@ private fun AtRest(
         color = HaoTheme.colors.inkSoft,
         modifier = Modifier.padding(top = HaoTheme.spacing.xl),
     )
+
+    // Offered only where it can be honoured: run from Gradle there is no app to point at, and a
+    // switch that silently does nothing is worse than no switch.
+    val autostart = remember { WindowsAutostart() }
+    if (autostart.isAvailable) {
+        var startsWithWindows by remember { mutableStateOf(autostart.isEnabled) }
+
+        HaoTextLink(
+            text = if (startsWithWindows) {
+                "Starts with Windows"
+            } else {
+                "Start with Windows"
+            },
+            onClick = {
+                val outcome = if (startsWithWindows) autostart.disable() else autostart.enable()
+                outcome
+                    .onSuccess { startsWithWindows = autostart.isEnabled }
+                    .onFailure { onNotice(it.message) }
+            },
+            color = if (startsWithWindows) HaoTheme.colors.ink else HaoTheme.colors.inkSoft,
+            modifier = Modifier.padding(top = HaoTheme.spacing.md),
+        )
+    }
 }
 
 @Composable

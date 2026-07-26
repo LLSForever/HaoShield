@@ -28,8 +28,9 @@ object ProtectedProcesses {
         "searchhost.exe", "logonui.exe", "spoolsv.exe", "wmiprvse.exe",
         // The machine's own defences, which are not ours to switch off.
         "msmpeng.exe", "securityhealthservice.exe", "securityhealthsystray.exe",
-        // And this app, which cannot guard anything if it ends itself.
-        "haoshield.exe", "java.exe", "javaw.exe",
+        // And this app, which cannot guard anything if it ends itself. Both spellings: the packaged
+        // executable takes its name from the installer, and the JVM ones cover running from source.
+        "haoshield.exe", "hao shield.exe", "java.exe", "javaw.exe",
     )
 
     fun isProtected(executableName: String, fullPath: String?): Boolean {

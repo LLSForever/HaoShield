@@ -42,10 +42,21 @@ compose.desktop {
     application {
         mainClass = "com.haoshield.desktop.MainKt"
 
+        // Packaging needs jpackage, which a full JDK ships and Android Studio's bundled JBR does
+        // not. Point at one for a packaging run without disturbing the JDK everything else uses:
+        //
+        //   gradlew :desktopApp:packageMsi -Phaoshield.packagingJdk="C:\path\to\jdk-21"
+        //
+        // The MSI format additionally wants WiX Toolset v3 on PATH. Without either, the app still
+        // runs from source with :desktopApp:run — packaging is for handing it to someone else.
+        providers.gradleProperty("haoshield.packagingJdk").orNull?.let { javaHome = it }
+
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Hao Shield"
             packageVersion = "1.0.0"
+            description = "Set this time aside."
+            vendor = "Hǎo Shield"
         }
     }
 }
