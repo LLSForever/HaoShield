@@ -169,6 +169,7 @@ private fun ShieldWindow(graph: DesktopGraph) {
                 isShieldSession = current.isShieldMode,
                 closedCount = closed,
                 allowedCount = current.temporarilyAllowedPackages.size,
+                intention = current.session.intention,
                 scope = scope,
                 onUnblock = { unblocking = true },
                 onNotice = { notice = it },
@@ -346,6 +347,7 @@ private fun InSession(
     isShieldSession: Boolean,
     closedCount: Int,
     allowedCount: Int,
+    intention: String?,
     scope: CoroutineScope,
     onUnblock: () -> Unit,
     onNotice: (String?) -> Unit,
@@ -369,6 +371,8 @@ private fun InSession(
         color = HaoTheme.colors.inkFaint,
         modifier = Modifier.padding(top = HaoTheme.spacing.md),
     )
+
+    Intention(intention, scope, graph)
 
     HaoTextLink(
         text = "Let something through",
@@ -409,6 +413,62 @@ private fun InSession(
                 }
             },
             modifier = Modifier.padding(top = HaoTheme.spacing.xl),
+        )
+    }
+}
+
+/**
+ * What this time was set aside for. Offered, never asked for — the session screen is meant to hold
+ * one thing at a time, so until someone reaches for it this is a single quiet line.
+ *
+ * Naming it changes what happens at the end: a time with an intention is always worth pausing over,
+ * however short it turned out to be.
+ */
+@Composable
+private fun Intention(intention: String?, scope: CoroutineScope, graph: DesktopGraph) {
+    var naming by remember { mutableStateOf(false) }
+    var draft by remember { mutableStateOf("") }
+
+    when {
+        intention != null -> Text(
+            text = intention,
+            style = HaoTheme.type.voice,
+            color = HaoTheme.colors.inkSoft,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = HaoTheme.spacing.lg),
+        )
+
+        naming -> {
+            HaoTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                placeholder = "What is this time for?",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = HaoTheme.spacing.lg),
+            )
+
+            HaoTextLink(
+                text = "Keep",
+                onClick = {
+                    val named = draft.trim()
+                    if (named.isNotEmpty()) {
+                        scope.launch { graph.sessionManager.setSessionIntention(named) }
+                    }
+                    naming = false
+                },
+                color = HaoTheme.colors.ink,
+                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+            )
+        }
+
+        else -> HaoTextLink(
+            text = "Name what this is for",
+            onClick = { naming = true },
+            color = HaoTheme.colors.inkFaint,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
         )
     }
 }

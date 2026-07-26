@@ -15,6 +15,7 @@ import com.haoshield.desktop.data.DesktopSettingsStore
 import com.haoshield.desktop.data.DesktopShieldPreferences
 import com.haoshield.desktop.data.NoStrictBlocking
 import com.haoshield.desktop.data.WindowsBlockedAppPresets
+import com.haoshield.domain.model.JournalRetention
 import com.haoshield.domain.repository.BlockingRepository
 import com.haoshield.domain.repository.JournalRepository
 import com.haoshield.domain.repository.SessionRepository
@@ -26,6 +27,7 @@ import com.haoshield.domain.service.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -38,6 +40,8 @@ import java.io.File
 class DesktopGraph(directory: File = DesktopPreferences.appDirectory()) {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    private val clock = SystemClock()
 
     private val preferences = DesktopPreferences(File(directory, "preferences.properties"))
 
@@ -59,7 +63,7 @@ class DesktopGraph(directory: File = DesktopPreferences.appDirectory()) {
         journalRepository = journalRepository,
         shieldTokenStore = shieldTokenStore,
         strictBlockingController = NoStrictBlocking,
-        clock = SystemClock(),
+        clock = clock,
         applicationScope = applicationScope,
     )
 
@@ -92,5 +96,13 @@ class DesktopGraph(directory: File = DesktopPreferences.appDirectory()) {
 
     fun start() {
         blocker.start()
+
+        // The journal keeps a season, not an archive. Nothing else would ever let anything go, and
+        // a journal that only grows becomes the ledger this app exists to resist.
+        applicationScope.launch {
+            journalRepository.pruneEntriesBefore(
+                clock.nowMillis() - JournalRetention.RETAIN_MILLIS,
+            )
+        }
     }
 }

@@ -72,6 +72,31 @@ class DesktopReflectionTest {
     }
 
     @Test
+    fun `naming a time keeps it, across the app closing`() = withFixture { fixture ->
+        fixture.sessions.startSession(SessionMode.SOFTWARE)
+
+        fixture.sessions.setSessionIntention("write the difficult chapter")
+
+        assertEquals(
+            "write the difficult chapter",
+            fixture.sessions.getActiveSession()?.intention,
+        )
+    }
+
+    @Test
+    fun `a name makes even a brief time worth pausing over`() = withFixture { fixture ->
+        fixture.sessions.startSession(SessionMode.SOFTWARE)
+        fixture.sessions.setSessionIntention("one small thing")
+        fixture.now += 30_000L
+        fixture.sessions.endSession(SessionEndMethod.IN_APP)
+
+        assertNotNull(
+            "the same half-minute goes unremarked without a name, and is worth closing with one",
+            fixture.sessions.getLastEndedSession(),
+        )
+    }
+
+    @Test
     fun `a long time is worth pausing over even with nothing named`() = withFixture { fixture ->
         fixture.sessions.startSession(SessionMode.SOFTWARE)
         fixture.now += 45 * 60 * 1_000L
