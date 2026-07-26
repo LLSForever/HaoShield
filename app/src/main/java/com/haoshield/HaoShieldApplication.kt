@@ -2,7 +2,7 @@ package com.haoshield
 
 import android.app.Application
 import com.haoshield.data.service.SessionNotificationService
-import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.di.ApplicationScope
 import com.haoshield.domain.service.SessionManager
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject

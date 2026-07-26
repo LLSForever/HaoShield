@@ -11,7 +11,7 @@ import android.view.WindowManager
 import android.widget.TextView
 import com.haoshield.R
 import com.haoshield.data.local.SettingsPreferencesDataStore
-import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.di.ApplicationScope
 import com.haoshield.domain.model.ThemePreference
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope

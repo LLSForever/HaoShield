@@ -1,16 +1,16 @@
 package com.haoshield.data.repository
 
-import com.haoshield.data.local.SettingsPreferencesDataStore
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ThemePreference
 import com.haoshield.domain.repository.SettingsRepository
+import com.haoshield.domain.service.SettingsStore
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
-    private val settingsPreferencesDataStore: SettingsPreferencesDataStore,
+    private val settingsPreferencesDataStore: SettingsStore,
 ) : SettingsRepository {
 
     override fun observeBlockingMode(): Flow<BlockingMode> =

@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ThemePreference
+import com.haoshield.domain.service.SettingsStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -27,10 +28,10 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 @Singleton
 class SettingsPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : SettingsStore {
     private val dataStore = context.settingsDataStore
 
-    fun observeBlockingMode(): Flow<BlockingMode> =
+    override fun observeBlockingMode(): Flow<BlockingMode> =
         dataStore.data.map { preferences ->
             when (preferences[Keys.BLOCKING_MODE]) {
                 BlockingMode.SHIELD.name -> BlockingMode.SHIELD
@@ -38,29 +39,29 @@ class SettingsPreferencesDataStore @Inject constructor(
             }
         }
 
-    suspend fun setBlockingMode(mode: BlockingMode) {
+    override suspend fun setBlockingMode(mode: BlockingMode) {
         dataStore.edit { preferences ->
             preferences[Keys.BLOCKING_MODE] = mode.name
         }
     }
 
-    fun observeAmbientSoundEnabled(): Flow<Boolean> =
+    override fun observeAmbientSoundEnabled(): Flow<Boolean> =
         dataStore.data.map { preferences ->
             preferences[Keys.AMBIENT_SOUND] ?: true
         }
 
-    suspend fun setAmbientSoundEnabled(enabled: Boolean) {
+    override suspend fun setAmbientSoundEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.AMBIENT_SOUND] = enabled
         }
     }
 
-    fun observeQuotesEnabled(): Flow<Boolean> =
+    override fun observeQuotesEnabled(): Flow<Boolean> =
         dataStore.data.map { preferences ->
             preferences[Keys.QUOTES] ?: true
         }
 
-    suspend fun setQuotesEnabled(enabled: Boolean) {
+    override suspend fun setQuotesEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.QUOTES] = enabled
         }
@@ -68,7 +69,7 @@ class SettingsPreferencesDataStore @Inject constructor(
 
     // --- Strict blocking (root) ---
 
-    fun observeStrictBlockingEnabled(): Flow<Boolean> =
+    override fun observeStrictBlockingEnabled(): Flow<Boolean> =
         dataStore.data.map { preferences ->
             preferences[Keys.STRICT_BLOCKING] ?: false
         }
@@ -76,7 +77,7 @@ class SettingsPreferencesDataStore @Inject constructor(
     suspend fun isStrictBlockingEnabled(): Boolean =
         dataStore.data.first()[Keys.STRICT_BLOCKING] ?: false
 
-    suspend fun setStrictBlockingEnabled(enabled: Boolean) {
+    override suspend fun setStrictBlockingEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[Keys.STRICT_BLOCKING] = enabled
         }
@@ -110,13 +111,13 @@ class SettingsPreferencesDataStore @Inject constructor(
 
     // --- Appearance ---
 
-    fun observeThemePreference(): Flow<ThemePreference> =
+    override fun observeThemePreference(): Flow<ThemePreference> =
         dataStore.data.map { preferences -> preferences.readTheme() }
 
     suspend fun getThemePreference(): ThemePreference =
         dataStore.data.first().readTheme()
 
-    suspend fun setThemePreference(preference: ThemePreference) {
+    override suspend fun setThemePreference(preference: ThemePreference) {
         dataStore.edit { preferences ->
             preferences[Keys.THEME] = preference.name
         }
@@ -130,10 +131,10 @@ class SettingsPreferencesDataStore @Inject constructor(
 
     // --- First-run intro ---
 
-    fun observeHasSeenIntro(): Flow<Boolean> =
+    override fun observeHasSeenIntro(): Flow<Boolean> =
         dataStore.data.map { preferences -> preferences[Keys.HAS_SEEN_INTRO] ?: false }
 
-    suspend fun setHasSeenIntro(seen: Boolean) {
+    override suspend fun setHasSeenIntro(seen: Boolean) {
         dataStore.edit { preferences -> preferences[Keys.HAS_SEEN_INTRO] = seen }
     }
 

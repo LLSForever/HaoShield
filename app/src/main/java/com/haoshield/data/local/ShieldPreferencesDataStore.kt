@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.haoshield.domain.service.ShieldPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -20,26 +21,26 @@ private val Context.shieldDataStore: DataStore<Preferences> by preferencesDataSt
 @Singleton
 class ShieldPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : ShieldPreferences {
     private val dataStore = context.shieldDataStore
 
     // --- Registered NFC UID (unchanged key — preserves existing registrations) ---
 
-    fun observeRegisteredUid(): Flow<String?> =
+    override fun observeRegisteredUid(): Flow<String?> =
         dataStore.data.map { preferences ->
             preferences[Keys.REGISTERED_UID]
         }
 
-    suspend fun getRegisteredUid(): String? =
+    override suspend fun getRegisteredUid(): String? =
         dataStore.data.first()[Keys.REGISTERED_UID]
 
-    suspend fun persistRegisteredUid(uid: String) {
+    override suspend fun persistRegisteredUid(uid: String) {
         dataStore.edit { preferences ->
             preferences[Keys.REGISTERED_UID] = uid
         }
     }
 
-    suspend fun clearRegisteredUid() {
+    override suspend fun clearRegisteredUid() {
         dataStore.edit { preferences ->
             preferences.remove(Keys.REGISTERED_UID)
         }
@@ -47,21 +48,21 @@ class ShieldPreferencesDataStore @Inject constructor(
 
     // --- Registered QR payload ---
 
-    fun observeRegisteredQr(): Flow<String?> =
+    override fun observeRegisteredQr(): Flow<String?> =
         dataStore.data.map { preferences ->
             preferences[Keys.REGISTERED_QR]
         }
 
-    suspend fun getRegisteredQr(): String? =
+    override suspend fun getRegisteredQr(): String? =
         dataStore.data.first()[Keys.REGISTERED_QR]
 
-    suspend fun persistRegisteredQr(payload: String) {
+    override suspend fun persistRegisteredQr(payload: String) {
         dataStore.edit { preferences ->
             preferences[Keys.REGISTERED_QR] = payload
         }
     }
 
-    suspend fun clearRegisteredQr() {
+    override suspend fun clearRegisteredQr() {
         dataStore.edit { preferences ->
             preferences.remove(Keys.REGISTERED_QR)
         }
@@ -69,16 +70,16 @@ class ShieldPreferencesDataStore @Inject constructor(
 
     // --- Pending QR payload (generated but not yet confirmed by a scan) ---
 
-    suspend fun getPendingQr(): String? =
+    override suspend fun getPendingQr(): String? =
         dataStore.data.first()[Keys.PENDING_QR]
 
-    suspend fun persistPendingQr(payload: String) {
+    override suspend fun persistPendingQr(payload: String) {
         dataStore.edit { preferences ->
             preferences[Keys.PENDING_QR] = payload
         }
     }
 
-    suspend fun clearPendingQr() {
+    override suspend fun clearPendingQr() {
         dataStore.edit { preferences ->
             preferences.remove(Keys.PENDING_QR)
         }

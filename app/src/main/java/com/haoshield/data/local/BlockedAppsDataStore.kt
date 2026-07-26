@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.haoshield.domain.service.BlockedAppsStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,10 +26,10 @@ private val Context.blockedAppsDataStore: DataStore<Preferences> by preferencesD
 @Singleton
 class BlockedAppsDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : BlockedAppsStore {
     private val dataStore = context.blockedAppsDataStore
 
-    fun observeBlockedPackages(): Flow<Set<String>?> =
+    override fun observeBlockedPackages(): Flow<Set<String>?> =
         dataStore.data.map { preferences ->
             if (preferences[Keys.CUSTOMISED] == true) {
                 preferences[Keys.PACKAGES].orEmpty()
@@ -37,7 +38,7 @@ class BlockedAppsDataStore @Inject constructor(
             }
         }
 
-    suspend fun setBlockedPackages(packages: Set<String>) {
+    override suspend fun setBlockedPackages(packages: Set<String>) {
         dataStore.edit { preferences ->
             preferences[Keys.CUSTOMISED] = true
             preferences[Keys.PACKAGES] = packages

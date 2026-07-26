@@ -44,6 +44,7 @@ android {
 
 dependencies {
     implementation(project(":shared:domain"))
+    implementation(project(":shared:data"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -69,4 +70,9 @@ dependencies {
     implementation(libs.zxing.core)
     kapt(libs.hilt.compiler)
     kapt(libs.androidx.room.compiler)
+
+    // Plain JVM unit tests. The session rules depend only on interfaces, so they need no
+    // emulator, no Robolectric, and no Android framework at all.
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

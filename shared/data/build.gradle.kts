@@ -14,15 +14,13 @@ kotlin {
 }
 
 dependencies {
-    api(libs.kotlinx.coroutines.core)
-    api(libs.javax.inject)
+    api(project(":shared:domain"))
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
-// Plain JVM tests: no emulator, no Robolectric, no Android at all. The whole point of keeping
-// this module platform-free is that its rules can be proved in about a second.
+// Same bargain as :shared:domain — nothing Android in here, so the rules run on a plain JVM.
 tasks.withType<Test>().configureEach {
     useJUnit()
     testLogging { events("passed", "failed", "skipped") }

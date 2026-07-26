@@ -1,9 +1,6 @@
 package com.haoshield.data.service
 
-import com.haoshield.data.blocking.StrictBlockingController
-import com.haoshield.data.local.PersistedSessionSnapshot
-import com.haoshield.data.local.SessionPreferencesDataStore
-import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.di.ApplicationScope
 import com.haoshield.domain.model.EndedSessionSummary
 import com.haoshield.domain.model.JournalEntry
 import com.haoshield.domain.model.JournalEntryType
@@ -15,8 +12,12 @@ import com.haoshield.domain.model.SessionState
 import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.model.UnblockPolicy
 import com.haoshield.domain.repository.JournalRepository
+import com.haoshield.domain.service.Clock
 import com.haoshield.domain.service.SessionManager
+import com.haoshield.domain.service.SessionSnapshot
+import com.haoshield.domain.service.SessionStore
 import com.haoshield.domain.service.ShieldTokenStore
+import com.haoshield.domain.service.StrictBlocking
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -32,10 +33,11 @@ import javax.inject.Singleton
 
 @Singleton
 class SessionManagerImpl @Inject constructor(
-    private val sessionPreferencesDataStore: SessionPreferencesDataStore,
+    private val sessionPreferencesDataStore: SessionStore,
     private val journalRepository: JournalRepository,
     private val shieldTokenStore: ShieldTokenStore,
-    private val strictBlockingController: StrictBlockingController,
+    private val strictBlockingController: StrictBlocking,
+    private val clock: Clock,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : SessionManager {
 
@@ -73,7 +75,7 @@ class SessionManagerImpl @Inject constructor(
         val session = Session(
             id = UUID.randomUUID().mostSignificantBits,
             mode = mode,
-            startedAtEpochMillis = System.currentTimeMillis(),
+            startedAtEpochMillis = clock.nowMillis(),
             isActive = true,
         )
 
@@ -132,14 +134,14 @@ class SessionManagerImpl @Inject constructor(
         journalRepository.saveEntry(
             JournalEntry(
                 content = journalNote,
-                createdAtEpochMillis = System.currentTimeMillis(),
+                createdAtEpochMillis = clock.nowMillis(),
                 sessionId = current.session.id,
                 type = JournalEntryType.UNBLOCK,
                 unblockedPackageName = packageName,
             ),
         )
 
-        val allowedUntil = System.currentTimeMillis() + UnblockPolicy.UNBLOCK_WINDOW_MILLIS
+        val allowedUntil = clock.nowMillis() + UnblockPolicy.UNBLOCK_WINDOW_MILLIS
         val updatedPackages = current.temporarilyAllowedPackages + (packageName to allowedUntil)
         sessionState.value = current.copy(temporarilyAllowedPackages = updatedPackages)
         sessionPreferencesDataStore.persistAllowedPackages(updatedPackages)
@@ -160,12 +162,12 @@ class SessionManagerImpl @Inject constructor(
 
     override suspend fun isAppTemporarilyAllowed(packageName: String): Boolean {
         val expiry = sessionState.value?.temporarilyAllowedPackages?.get(packageName) ?: return false
-        return System.currentTimeMillis() < expiry
+        return clock.nowMillis() < expiry
     }
 
     override suspend fun getTemporaryAllowanceExpiry(packageName: String): Long? {
         val expiry = sessionState.value?.temporarilyAllowedPackages?.get(packageName) ?: return null
-        return expiry.takeIf { System.currentTimeMillis() < it }
+        return expiry.takeIf { clock.nowMillis() < it }
     }
 
     override suspend fun restorePersistedSession() {
@@ -178,13 +180,13 @@ class SessionManagerImpl @Inject constructor(
         }
     }
 
-    private suspend fun restoreFromSnapshot(snapshot: PersistedSessionSnapshot?) {
+    private suspend fun restoreFromSnapshot(snapshot: SessionSnapshot?) {
         if (snapshot == null) {
             discardPersistedSession()
             return
         }
 
-        val elapsed = System.currentTimeMillis() - snapshot.session.startedAtEpochMillis
+        val elapsed = clock.nowMillis() - snapshot.session.startedAtEpochMillis
         // A snapshot claiming an impossible age is not a real session — it means the device clock
         // moved (or the store outlived the install that wrote it). Restoring it would show a
         // nonsense clock counting hundreds of hours, so let it go rather than resurrect it.
@@ -194,7 +196,7 @@ class SessionManagerImpl @Inject constructor(
             return
         }
 
-        val now = System.currentTimeMillis()
+        val now = clock.nowMillis()
         sessionState.value = SessionState(
             session = snapshot.session,
             elapsedMillis = elapsed.coerceAtLeast(0L),
@@ -258,7 +260,7 @@ class SessionManagerImpl @Inject constructor(
         journalRepository.saveEntry(
             JournalEntry(
                 content = note,
-                createdAtEpochMillis = System.currentTimeMillis(),
+                createdAtEpochMillis = clock.nowMillis(),
                 sessionId = current.session.id,
                 type = JournalEntryType.EMERGENCY_EXIT,
             ),
@@ -275,7 +277,7 @@ class SessionManagerImpl @Inject constructor(
     ): Session? {
         val current = sessionState.value ?: return null
 
-        val now = System.currentTimeMillis()
+        val now = clock.nowMillis()
         val endedSession = current.session.copy(
             endedAtEpochMillis = now,
             isActive = false,
@@ -313,7 +315,7 @@ class SessionManagerImpl @Inject constructor(
         timerJob = applicationScope.launch {
             while (true) {
                 val current = sessionState.value ?: break
-                val elapsed = (System.currentTimeMillis() - startedAtEpochMillis).coerceAtLeast(0L)
+                val elapsed = (clock.nowMillis() - startedAtEpochMillis).coerceAtLeast(0L)
                 sessionState.value = current.copy(elapsedMillis = elapsed)
                 delay(TIMER_TICK_MILLIS)
             }

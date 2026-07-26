@@ -3,7 +3,8 @@ package com.haoshield.data.blocking
 import com.haoshield.data.local.BlockedAppsDataStore
 import com.haoshield.data.local.SettingsPreferencesDataStore
 import com.haoshield.data.root.RootShell
-import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.di.ApplicationScope
+import com.haoshield.domain.service.StrictBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Job
@@ -32,7 +33,7 @@ class StrictBlockingController @Inject constructor(
     private val settings: SettingsPreferencesDataStore,
     private val blockedAppsDataStore: BlockedAppsDataStore,
     @ApplicationScope private val applicationScope: CoroutineScope,
-) {
+) : StrictBlocking {
     // Per-package re-suspend timers for expired temporary unblocks.
     private val pendingResuspends = mutableMapOf<String, Job>()
     private val resuspendLock = Mutex()
@@ -44,7 +45,7 @@ class StrictBlockingController @Inject constructor(
             .toList()
 
     /** Suspend all blocked packages, if strict mode is enabled and root is available. */
-    suspend fun applyForSession() {
+    override suspend fun applyForSession() {
         cancelAllResuspends()
         if (!settings.isStrictBlockingEnabled()) return
         if (!rootShell.isRootBinaryPresent()) return
@@ -66,7 +67,7 @@ class StrictBlockingController @Inject constructor(
      * succeeds; otherwise it is left set so a later release retries, rather than stranding apps
      * OS-suspended with no in-app path back.
      */
-    suspend fun releaseAll() {
+    override suspend fun releaseAll() {
         cancelAllResuspends()
         if (!settings.isStrictApplied()) return
         val suspended = settings.getStrictSuspendedPackages()
@@ -83,7 +84,7 @@ class StrictBlockingController @Inject constructor(
      * given, the app is re-suspended when the allowance expires, so strict mode re-locks it just as
      * the calm boundary would in the non-root case.
      */
-    suspend fun release(packageName: String, resuspendAfterMillis: Long? = null) {
+    override suspend fun release(packageName: String, resuspendAfterMillis: Long?) {
         if (!settings.isStrictApplied()) return
         rootShell.exec(listOf(unsuspendCommand(packageName)))
 

@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.nfc.NfcAdapter
 import android.nfc.Tag
-import com.haoshield.di.ApplicationScope
+import com.haoshield.domain.di.ApplicationScope
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.model.ShieldTokenKind

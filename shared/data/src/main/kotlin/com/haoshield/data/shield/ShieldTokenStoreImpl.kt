@@ -1,8 +1,8 @@
 package com.haoshield.data.shield
 
-import com.haoshield.data.local.ShieldPreferencesDataStore
 import com.haoshield.domain.model.ShieldToken
 import com.haoshield.domain.model.ShieldTokenKind
+import com.haoshield.domain.service.ShieldPreferences
 import com.haoshield.domain.service.ShieldTokenStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ShieldTokenStoreImpl @Inject constructor(
-    private val shieldPreferencesDataStore: ShieldPreferencesDataStore,
+    private val shieldPreferencesDataStore: ShieldPreferences,
 ) : ShieldTokenStore {
 
     override fun observeRegisteredTokens(): Flow<List<ShieldToken>> =

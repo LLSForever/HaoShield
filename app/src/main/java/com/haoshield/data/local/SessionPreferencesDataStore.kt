@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.haoshield.domain.model.Session
 import com.haoshield.domain.model.SessionMode
+import com.haoshield.domain.service.SessionSnapshot
+import com.haoshield.domain.service.SessionStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,20 +23,15 @@ private val Context.sessionDataStore: DataStore<Preferences> by preferencesDataS
     name = "session_preferences",
 )
 
-data class PersistedSessionSnapshot(
-    val session: Session,
-    val temporarilyAllowedPackages: Map<String, Long>,
-)
-
 private const val NO_INTENTION = ""
 
 @Singleton
 class SessionPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : SessionStore {
     private val dataStore = context.sessionDataStore
 
-    fun observePersistedSession(): Flow<PersistedSessionSnapshot?> =
+    override fun observePersistedSession(): Flow<SessionSnapshot?> =
         dataStore.data.map { preferences ->
             val isActive = preferences[Keys.IS_ACTIVE] ?: false
             if (!isActive) return@map null
@@ -43,7 +40,7 @@ class SessionPreferencesDataStore @Inject constructor(
             val mode = runCatching { SessionMode.valueOf(modeName) }.getOrNull()
                 ?: return@map null
 
-            PersistedSessionSnapshot(
+            SessionSnapshot(
                 session = Session(
                     id = preferences[Keys.SESSION_ID] ?: return@map null,
                     mode = mode,
@@ -57,7 +54,7 @@ class SessionPreferencesDataStore @Inject constructor(
             )
         }
 
-    suspend fun persistActiveSession(
+    override suspend fun persistActiveSession(
         session: Session,
         temporarilyAllowedPackages: Map<String, Long>,
     ) {
@@ -71,7 +68,7 @@ class SessionPreferencesDataStore @Inject constructor(
         }
     }
 
-    suspend fun persistIntention(intention: String) {
+    override suspend fun persistIntention(intention: String) {
         dataStore.edit { preferences ->
             if (preferences[Keys.IS_ACTIVE] == true) {
                 preferences[Keys.INTENTION] = intention
@@ -79,7 +76,7 @@ class SessionPreferencesDataStore @Inject constructor(
         }
     }
 
-    suspend fun persistAllowedPackages(packages: Map<String, Long>) {
+    override suspend fun persistAllowedPackages(packages: Map<String, Long>) {
         dataStore.edit { preferences ->
             if (preferences[Keys.IS_ACTIVE] == true) {
                 preferences[Keys.ALLOWED_PACKAGES] = packages.encodeAllowances()
@@ -102,7 +99,7 @@ class SessionPreferencesDataStore @Inject constructor(
             pkg to expiry
         }.toMap()
 
-    suspend fun clearSession() {
+    override suspend fun clearSession() {
         dataStore.edit { preferences ->
             preferences.remove(Keys.IS_ACTIVE)
             preferences.remove(Keys.SESSION_ID)
