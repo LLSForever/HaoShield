@@ -54,6 +54,8 @@ plain app image with no installer. The property leaves the JDK used for everythi
 
 ## Not there yet
 
-No journal or reflection screen, no unblocking an app mid-session with a note, and no way to end
-a desktop session with the Shield your *phone* registered — the two apps keep their own. Pairing
-them is the interesting next step, and the reason the token format is shared already.
+No unblocking an app mid-session with a note — on the phone that is the gentle way past a
+boundary, and here there is currently no way past at all except ending the time.
+
+No way to end a desktop session with the Shield your *phone* registered: the two apps keep their
+own. Pairing them is the interesting next step, and the reason the token format is shared already.

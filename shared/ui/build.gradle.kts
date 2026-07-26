@@ -7,11 +7,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Step 3, follow-up: the desktop jvm() target now stands alongside Android. The design system —
-// theme, components, and the platform-free content — lives in commonMain and compiles for both.
-// The bundled fonts are the one Android-specific seam: an expect/actual (R.font on Android, a
-// placeholder on the JVM until a desktop app exists to render real type). The date/time journal
-// helpers that need java.* stay in androidMain for now.
+// The desktop jvm() target stands alongside Android. The design system — theme, components, and
+// the platform-free content — lives in commonMain and compiles for both. The bundled fonts are the
+// one genuinely Android-specific seam: an expect/actual, R.font on Android and a fallback on the
+// JVM until there is real type to load there.
 kotlin {
     androidTarget {
         compilerOptions {
@@ -21,6 +20,15 @@ kotlin {
     jvm()
 
     sourceSets {
+        // Android and the desktop are both JVMs, and some of this code is platform-free in every
+        // sense except that it wants java.time. Rather than duplicate it or reimplement calendar
+        // arithmetic in commonMain, both targets share a source set one level above them.
+        val jvmSharedMain by creating {
+            dependsOn(commonMain.get())
+        }
+        androidMain.get().dependsOn(jvmSharedMain)
+        jvmMain.get().dependsOn(jvmSharedMain)
+
         commonMain.dependencies {
             implementation(project(":shared:domain"))
             implementation(compose.runtime)

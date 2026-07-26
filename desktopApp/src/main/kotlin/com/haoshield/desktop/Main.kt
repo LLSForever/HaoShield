@@ -36,6 +36,7 @@ import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.ShieldScanResult
 import com.haoshield.domain.model.ShieldToken
 import com.haoshield.desktop.startup.WindowsAutostart
+import com.haoshield.domain.model.EndedSessionSummary
 import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoSecondaryButton
@@ -103,9 +104,29 @@ private fun ShieldWindow(graph: DesktopGraph) {
 
     var notice by remember { mutableStateOf<String?>(null) }
     var editingBlocklist by remember { mutableStateOf(false) }
+    var readingJournal by remember { mutableStateOf(false) }
+    var reflection by remember { mutableStateOf<EndedSessionSummary?>(null) }
+
+    // A time that has just ended may be worth pausing over. The session rules decide which ones
+    // qualify; this only asks once the clock has stopped.
+    LaunchedEffect(session) {
+        if (session == null) {
+            reflection = graph.sessionManager.getLastEndedSession()
+        }
+    }
+
+    reflection?.let { summary ->
+        ReflectionScreen(graph, summary, scope, onDone = { reflection = null })
+        return
+    }
 
     if (editingBlocklist) {
         BlocklistScreen(graph, scope, onBack = { editingBlocklist = false })
+        return
+    }
+
+    if (readingJournal) {
+        JournalScreen(graph, onBack = { readingJournal = false })
         return
     }
 
@@ -131,6 +152,7 @@ private fun ShieldWindow(graph: DesktopGraph) {
                 graph = graph,
                 scope = scope,
                 onEditBlocklist = { editingBlocklist = true },
+                onReadJournal = { readingJournal = true },
                 onNotice = { notice = it },
             )
 
@@ -236,6 +258,7 @@ private fun AtRest(
     graph: DesktopGraph,
     scope: CoroutineScope,
     onEditBlocklist: () -> Unit,
+    onReadJournal: () -> Unit,
     onNotice: (String?) -> Unit,
 ) {
     val blocked by graph.blockingRepository.observeBlockedPackageNames()
@@ -274,6 +297,13 @@ private fun AtRest(
         onClick = onEditBlocklist,
         color = HaoTheme.colors.inkSoft,
         modifier = Modifier.padding(top = HaoTheme.spacing.xl),
+    )
+
+    HaoTextLink(
+        text = "Journal",
+        onClick = onReadJournal,
+        color = HaoTheme.colors.inkSoft,
+        modifier = Modifier.padding(top = HaoTheme.spacing.md),
     )
 
     // Offered only where it can be honoured: run from Gradle there is no app to point at, and a
