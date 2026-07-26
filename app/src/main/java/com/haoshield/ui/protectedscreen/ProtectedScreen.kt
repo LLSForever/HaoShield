@@ -10,6 +10,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,7 +21,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -37,9 +40,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,15 +55,22 @@ import com.haoshield.ui.components.HaoSecondaryButton
 import com.haoshield.ui.components.HaoTextField
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun ProtectedScreen(
+    openEmergencyExit: Boolean = false,
     onNavigateHome: () -> Unit,
     onNavigateToReflection: () -> Unit,
     onNavigateToScanner: () -> Unit,
     viewModel: ProtectedScreenViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Arrived through the door at the foot of Settings.
+    LaunchedEffect(openEmergencyExit) {
+        if (openEmergencyExit) viewModel.onRequestEmergencyExit()
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -72,7 +84,10 @@ fun ProtectedScreen(
     // Tapping empty space rests the screen — the session keeps running in the dark. Ephemeral view
     // state on purpose: nothing outside this screen needs to know, it just has to survive rotation.
     var resting by rememberSaveable { mutableStateOf(false) }
+    // True while the intention is being written, so the rest of the screen can withdraw.
+    var writingIntention by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     // Actually dim the backlight while resting, so it's darkness rather than just black pixels.
     DisposableEffect(resting) {
@@ -94,7 +109,10 @@ fun ProtectedScreen(
                 // Not during the emergency countdown — you shouldn't be able to black that out.
                 enabled = uiState.emergencyStep == null && !resting,
                 onClickLabel = "Rest the screen",
-            ) { resting = true },
+            ) {
+                // While writing, a tap away puts the words down rather than darkening the screen.
+                if (writingIntention) focusManager.clearFocus() else resting = true
+            },
     ) {
         AmbientMusicToggle(
             isPlaying = uiState.isAmbientMusicPlaying,
@@ -105,6 +123,22 @@ fun ProtectedScreen(
                 .padding(top = HaoTheme.spacing.md, end = HaoTheme.spacing.sm),
         )
 
+        // Naming an intention is its own moment. While the words are being written the rest of
+        // the screen withdraws — no clock counting at you, no ways out in view. Tapping away
+        // returns it.
+        val stillness by animateFloatAsState(
+            targetValue = if (writingIntention) 0f else 1f,
+            animationSpec = tween(HaoMotion.STANDARD),
+            label = "stillness",
+        )
+
+        // Shown once, early, then gone. The gesture only needs teaching the first time.
+        var showRestHint by rememberSaveable { mutableStateOf(true) }
+        LaunchedEffect(Unit) {
+            delay(REST_HINT_MILLIS)
+            showRestHint = false
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -112,49 +146,74 @@ fun ProtectedScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = HaoTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            // The session is the one place the mark was missing, which left this screen feeling
-            // detached from the rest of the app. Quiet enough not to compete with the clock.
-            Text(
-                text = "好",
-                modifier = Modifier.padding(bottom = HaoTheme.spacing.lg),
-                style = HaoTheme.type.glyphMark,
-                color = HaoTheme.colors.inkFaint,
-            )
+            // Weighted so the still centre sits a little above the middle, leaving the lower
+            // half room to breathe rather than crowding everything against the bottom edge.
+            Spacer(modifier = Modifier.weight(0.8f))
 
-            Text(
-                text = uiState.formattedElapsedTime,
-                style = HaoTheme.type.clock,
-                color = HaoTheme.colors.ink,
-                // Never let a long duration wrap onto a second line.
-                maxLines = 1,
-                softWrap = false,
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.graphicsLayer { alpha = stillness },
+            ) {
+                Text(
+                    text = "好",
+                    modifier = Modifier.padding(bottom = HaoTheme.spacing.lg),
+                    style = HaoTheme.type.glyphMark,
+                    color = HaoTheme.colors.inkFaint,
+                )
 
-            Text(
-                text = uiState.protectionMessage,
-                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
-                style = HaoTheme.type.body,
-                color = HaoTheme.colors.inkSoft,
-                textAlign = TextAlign.Center,
-            )
+                Text(
+                    text = uiState.formattedElapsedTime,
+                    style = HaoTheme.type.clock,
+                    color = HaoTheme.colors.ink,
+                    // Never let a long duration wrap onto a second line.
+                    maxLines = 1,
+                    softWrap = false,
+                )
 
-            Text(
-                text = "Tap anywhere to rest the screen.",
-                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                style = HaoTheme.type.caption,
-                color = HaoTheme.colors.inkFaint,
-                textAlign = TextAlign.Center,
-            )
+                Text(
+                    text = uiState.protectionMessage,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                    style = HaoTheme.type.body,
+                    color = HaoTheme.colors.inkSoft,
+                    textAlign = TextAlign.Center,
+                )
 
-            // A gentle, ignorable invitation to name what this time is for. Fades away once set,
-            // dismissed, or after the early window passes.
+                AnimatedVisibility(
+                    visible = showRestHint,
+                    exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
+                ) {
+                    Text(
+                        text = "Tap anywhere to rest the screen.",
+                        modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+                        style = HaoTheme.type.caption,
+                        color = HaoTheme.colors.inkFaint,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = uiState.quoteVisible && uiState.currentQuote != null,
+                    enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xxl),
+                ) {
+                    Text(
+                        text = uiState.currentQuote.orEmpty(),
+                        style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
+                        color = HaoTheme.colors.inkSoft,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1.2f))
+
+            // The invitation to name the time — the one thing that stays present while writing.
             AnimatedVisibility(
                 visible = uiState.showIntentionPrompt,
                 enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
                 exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.STANDARD)),
-                modifier = Modifier.padding(top = HaoTheme.spacing.xl),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -167,7 +226,8 @@ fun ProtectedScreen(
                         onValueChange = viewModel::onIntentionDraftChange,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = HaoTheme.spacing.sm),
+                            .padding(top = HaoTheme.spacing.sm)
+                            .onFocusChanged { writingIntention = it.isFocused },
                         placeholder = "A few words, if you like",
                         minLines = 1,
                     )
@@ -193,83 +253,47 @@ fun ProtectedScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = uiState.quoteVisible && uiState.currentQuote != null,
-                enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                modifier = Modifier.padding(top = HaoTheme.spacing.xxl),
+            // How this ends: one affordance, and one quiet way past it. A Shield session ends at
+            // the Shield — saying so is enough. A button whose only job was to tell you to go and
+            // use the object was the app explaining itself.
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(top = HaoTheme.spacing.xl)
+                    .graphicsLayer { alpha = stillness },
             ) {
-                Text(
-                    text = uiState.currentQuote.orEmpty(),
-                    style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
-                    color = HaoTheme.colors.inkSoft,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(
-                    bottom = HaoTheme.spacing.xl,
-                    start = HaoTheme.spacing.xl,
-                    end = HaoTheme.spacing.xl,
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            uiState.endSessionHint?.let { hint ->
-                Text(
-                    text = hint,
-                    modifier = Modifier.padding(bottom = HaoTheme.spacing.sm),
-                    style = HaoTheme.type.caption,
-                    color = HaoTheme.colors.inkSoft,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            HaoSecondaryButton(
-                text = if (uiState.isEndingSession) "Ending…" else uiState.endButtonLabel,
-                onClick = viewModel::onEndSessionClick,
-                enabled = !uiState.isEndingSession,
-            )
-
-            if (uiState.sessionMode == SessionMode.SHIELD && uiState.endSessionHint == null) {
-                Text(
-                    text = "Tap your Hǎo Shield to end this session.",
-                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                    style = HaoTheme.type.caption,
-                    color = HaoTheme.colors.inkFaint,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            if (uiState.sessionMode == SessionMode.SHIELD && uiState.hasQrToken) {
-                TextButton(
-                    onClick = onNavigateToScanner,
-                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                ) {
+                uiState.endSessionHint?.let { hint ->
                     Text(
-                        text = "Scan your printed Shield to end",
+                        text = hint,
+                        modifier = Modifier.padding(bottom = HaoTheme.spacing.sm),
                         style = HaoTheme.type.caption,
-                        color = HaoTheme.colors.ink,
+                        color = HaoTheme.colors.inkSoft,
+                        textAlign = TextAlign.Center,
                     )
                 }
+
+                when {
+                    uiState.sessionMode != SessionMode.SHIELD -> HaoSecondaryButton(
+                        text = if (uiState.isEndingSession) "Ending…" else "End session",
+                        onClick = viewModel::onEndSessionClick,
+                        enabled = !uiState.isEndingSession,
+                    )
+                    uiState.hasNfcToken -> Text(
+                        text = "Tap your Shield to end.",
+                        style = HaoTheme.type.body,
+                        color = HaoTheme.colors.inkSoft,
+                        textAlign = TextAlign.Center,
+                    )
+                    uiState.hasQrToken -> HaoSecondaryButton(
+                        text = "Scan your Shield",
+                        onClick = onNavigateToScanner,
+                    )
+                    else -> Unit
+                }
+
             }
 
-            if (uiState.sessionMode == SessionMode.SHIELD) {
-                TextButton(
-                    onClick = viewModel::onRequestEmergencyExit,
-                    modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                ) {
-                    Text(
-                        text = "I don't have my Shield with me",
-                        style = HaoTheme.type.caption,
-                        color = HaoTheme.colors.inkFaint,
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
         }
 
         // Fade the emergency panel in and out; remember the last step so the exit fade has content.
@@ -345,6 +369,9 @@ private fun RestingSurface(onWake: () -> Unit) {
 }
 
 private const val RESTING_BRIGHTNESS = 0.01f
+
+/** How long the rest-the-screen gesture is explained before the screen falls quiet. */
+private const val REST_HINT_MILLIS = 20_000L
 
 private fun Context.setScreenBrightness(brightness: Float) {
     val activity = generateSequence(this) { (it as? ContextWrapper)?.baseContext }

@@ -208,16 +208,21 @@ class ProtectedScreenViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        ambientMusicPlayer.pause()
-        super.onCleared()
-    }
+    // Deliberately no onCleared() pausing the ambient bed. The session owns the sound now, not
+    // this screen: the foreground service lives exactly as long as the session and stops it at
+    // the end. Pausing here meant that returning from the notification — which pops and rebuilds
+    // back-stack entries — tore down a Protected entry and silenced the sound on the way in.
 
+    /** Which Shields are registered decides how the session says it ends. */
     private fun observeQrToken() {
         viewModelScope.launch {
             shieldTokenStore.observeRegisteredTokens().collect { tokens ->
-                val hasQr = tokens.any { it.kind == ShieldTokenKind.QR }
-                _uiState.update { it.copy(hasQrToken = hasQr) }
+                _uiState.update {
+                    it.copy(
+                        hasQrToken = tokens.any { token -> token.kind == ShieldTokenKind.QR },
+                        hasNfcToken = tokens.any { token -> token.kind == ShieldTokenKind.NFC },
+                    )
+                }
             }
         }
     }

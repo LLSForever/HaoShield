@@ -20,6 +20,7 @@ data class ProtectedScreenUiState(
     val emergencyNote: String = "",
     val emergencyCountdownSeconds: Int = 0,
     val hasQrToken: Boolean = false,
+    val hasNfcToken: Boolean = false,
     val intention: String? = null,
     val intentionDraft: String = "",
     val showIntentionPrompt: Boolean = false,
@@ -32,9 +33,4 @@ data class ProtectedScreenUiState(
                 null -> "Returning to yourself."
             }
 
-    val endButtonLabel: String
-        get() = when (sessionMode) {
-            SessionMode.SHIELD -> "End with Shield"
-            SessionMode.SOFTWARE, null -> "End session"
-        }
 }

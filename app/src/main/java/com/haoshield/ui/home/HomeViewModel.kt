@@ -107,6 +107,9 @@ class HomeViewModel @Inject constructor(
             // No Shield registered yet — send the user to make and register one, never dead-end.
             !state.hasAnyToken -> emit(HomeEvent.NavigateToGuide)
             !shieldPermissions.isReady() -> emit(HomeEvent.NavigateToSetup)
+            // A printed Shield has nothing to hold against the phone, so the tap opens the camera
+            // directly rather than a waiting screen that has to offer a second way in.
+            !state.hasNfcToken -> emit(HomeEvent.NavigateToScanner(ScanMode.SESSION))
             // NFC reader is already armed by MainActivity; just show the prompt and wait for a tap.
             else -> local.update { it.copy(awaiting = true, errorMessage = null) }
         }
