@@ -23,8 +23,10 @@ package com.haoshield.domain
  *
  * And it is a principle *in action*, not a museum piece: every breathing
  * animation in the app — the glyph at rest, the waiting text, the darkened
- * screen — draws its rhythm from [BREATH_MILLIS], and a single pixel of ink
- * is set beneath the 好 on the home screen, fully present and never seen.
+ * screen — draws its rhythm from [BREATH_MILLIS]; the three qualities in
+ * [TRUTHFULNESS], [COMPASSION] and [FORBEARANCE] each name a decision already
+ * made in the design; and a single pixel of ink is set beneath the 好 on the
+ * home screen, fully present and never seen.
  */
 object Hao {
 
@@ -42,6 +44,38 @@ object Hao {
      * which is itself the point.
      */
     const val GOOD: Char = '好'
+
+    /**
+     * 真善忍 — Truthfulness, Compassion, Forbearance.
+     *
+     * What the innate nature the app exists to make room for resonates with.
+     * The introduction names them on its first page; they are held here so the
+     * codebase remembers them too, rather than leaving them a thing said once
+     * at the door.
+     *
+     * They are not decoration. Each already governs a decision that was made
+     * before it had a name:
+     *
+     *  - 真 the app does not deceive. No streaks, no manufactured urgency, no
+     *    invented numbers; and where the blocking can be slipped past, the copy
+     *    says so plainly rather than implying a wall that isn't there.
+     *  - 善 the boundary is kind. It rests an app rather than forbidding it, it
+     *    always offers a way through, and the journal keeps intentions rather
+     *    than a tally of failures.
+     *  - 忍 the friction *is* the practice. A written intention, a slow fade, a
+     *    countdown that must simply be waited out — every one of them asks the
+     *    person to sit a moment with an impulse instead of acting on it.
+     */
+    const val TRUTHFULNESS: Char = '真'
+
+    /** 善 — see [TRUTHFULNESS]. */
+    const val COMPASSION: Char = '善'
+
+    /** 忍 — see [TRUTHFULNESS]. */
+    const val FORBEARANCE: Char = '忍'
+
+    /** 真善忍, together. */
+    const val THREE_QUALITIES: String = "真善忍"
 
     /**
      * One resting human breath, in milliseconds — about fourteen to the

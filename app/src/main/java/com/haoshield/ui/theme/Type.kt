@@ -33,12 +33,16 @@ import com.haoshield.R
  * weight axis is selected per style below. Variable fonts are supported on
  * API 26+, which is our minSdk.
  *
- * The 好 glyph has its own family. Noto Serif (Latin) contains no CJK, so the
- * character used to render via whatever serif-CJK fallback the device happened
- * to ship — which meant the app, the launcher icon and the printed sheet could
- * each show a different 好. [NotoSerifHao] is Noto Serif SC (OFL) subset down to
- * that single glyph, ~2KB, so it is now identical everywhere. It contains ONLY
- * 好: never use it for text.
+ * The characters have their own family. Noto Serif (Latin) contains no CJK, so
+ * they used to render via whatever serif-CJK fallback the device happened to
+ * ship — which meant the app, the launcher icon and the printed sheet could each
+ * show a different 好. [NotoSerifHao] is Noto Serif SC (OFL) subset down to the
+ * four the app actually speaks — 好 真 善 忍 — at ~3KB, so they are identical
+ * everywhere.
+ *
+ * It contains ONLY those four and no Latin at all, so it can render them
+ * standing alone but never a sentence they sit inside; mixed text must stay on
+ * [NotoSerif] or [Inter] and accept the device's CJK fallback.
  */
 
 // Variable fonts: the requested FontWeight maps to the font's wght axis on API 26+ (our minSdk).
@@ -51,7 +55,11 @@ val NotoSerif = FontFamily(
     notoSerif(FontWeight.Medium),
 )
 
-/** Single-glyph family: 好 and nothing else. Licence in assets/licenses/NotoSerifSC-OFL.txt. */
+/**
+ * Four-glyph family: 好 真 善 忍 and nothing else — the app's own character set,
+ * the ones named in [com.haoshield.domain.Hao]. Licence in
+ * assets/licenses/NotoSerifSC-OFL.txt.
+ */
 val NotoSerifHao = FontFamily(Font(resId = R.font.noto_serif_hao))
 
 val Inter = FontFamily(
