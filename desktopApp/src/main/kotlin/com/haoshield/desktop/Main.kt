@@ -16,8 +16,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -32,6 +39,7 @@ import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoSecondaryButton
 import com.haoshield.ui.components.HaoTextField
+import com.haoshield.ui.components.HaoTextLink
 import com.haoshield.ui.protectedscreen.ProtectedTimeFormatter
 import com.haoshield.ui.theme.HaoTheme
 import kotlinx.coroutines.CoroutineScope
@@ -39,15 +47,49 @@ import kotlinx.coroutines.launch
 
 fun main() = application {
     val graph = remember { DesktopGraph().also(DesktopGraph::start) }
+    var windowOpen by remember { mutableStateOf(true) }
 
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "Hǎo Shield",
-        state = rememberWindowState(width = 460.dp, height = 660.dp),
-    ) {
-        HaoTheme {
-            ShieldWindow(graph)
+    // Closing the window puts the app in the tray rather than ending it: a protected time that
+    // stopped because a window was shut would be no protection at all. Quitting outright stays
+    // available — this is meant to be friction, not a cage — but it has to be chosen.
+    Tray(
+        icon = EnsoIcon,
+        tooltip = "Hǎo Shield",
+        onAction = { windowOpen = true },
+        menu = {
+            Item("Open", onClick = { windowOpen = true })
+            Item("Quit Hǎo Shield", onClick = ::exitApplication)
+        },
+    )
+
+    if (windowOpen) {
+        Window(
+            onCloseRequest = { windowOpen = false },
+            title = "Hǎo Shield",
+            state = rememberWindowState(width = 460.dp, height = 680.dp),
+        ) {
+            HaoTheme {
+                ShieldWindow(graph)
+            }
         }
+    }
+}
+
+/**
+ * The ensō — a circle drawn in one breath, left open. The app's mark, and small enough at tray size
+ * that anything more detailed would only turn to mud.
+ */
+private object EnsoIcon : Painter() {
+    override val intrinsicSize: Size = Size(64f, 64f)
+
+    override fun DrawScope.onDraw() {
+        drawArc(
+            color = Color(0xFF1A1A1A),
+            startAngle = 25f,
+            sweepAngle = 310f,
+            useCenter = false,
+            style = Stroke(width = size.minDimension * 0.11f, cap = StrokeCap.Round),
+        )
     }
 }
 
@@ -59,6 +101,12 @@ private fun ShieldWindow(graph: DesktopGraph) {
     val scope = rememberCoroutineScope()
 
     var notice by remember { mutableStateOf<String?>(null) }
+    var editingBlocklist by remember { mutableStateOf(false) }
+
+    if (editingBlocklist) {
+        BlocklistScreen(graph, scope, onBack = { editingBlocklist = false })
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -78,7 +126,12 @@ private fun ShieldWindow(graph: DesktopGraph) {
         when {
             tokens.isEmpty() -> MakeYourShield(graph, scope) { notice = it }
 
-            current == null -> AtRest(graph, scope) { notice = it }
+            current == null -> AtRest(
+                graph = graph,
+                scope = scope,
+                onEditBlocklist = { editingBlocklist = true },
+                onNotice = { notice = it },
+            )
 
             else -> InSession(
                 graph = graph,
@@ -178,7 +231,15 @@ private fun MakeYourShield(
 }
 
 @Composable
-private fun AtRest(graph: DesktopGraph, scope: CoroutineScope, onNotice: (String?) -> Unit) {
+private fun AtRest(
+    graph: DesktopGraph,
+    scope: CoroutineScope,
+    onEditBlocklist: () -> Unit,
+    onNotice: (String?) -> Unit,
+) {
+    val blocked by graph.blockingRepository.observeBlockedPackageNames()
+        .collectAsState(initial = emptySet())
+
     Text(
         text = "Set this time aside.",
         style = HaoTheme.type.voice,
@@ -205,6 +266,13 @@ private fun AtRest(graph: DesktopGraph, scope: CoroutineScope, onNotice: (String
             }
         },
         modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+    )
+
+    HaoTextLink(
+        text = "${blocked.size} apps set aside",
+        onClick = onEditBlocklist,
+        color = HaoTheme.colors.inkSoft,
+        modifier = Modifier.padding(top = HaoTheme.spacing.xl),
     )
 }
 

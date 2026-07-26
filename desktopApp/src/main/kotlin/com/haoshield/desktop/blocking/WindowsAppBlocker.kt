@@ -64,13 +64,16 @@ class WindowsAppBlocker(
         for (handle in handles) {
             if (handle.pid() == ownPid || !handle.isAlive) continue
 
-            val executable = handle.info().command().orElse(null)
-                ?.substringAfterLast('\\')
-                ?.substringAfterLast('/')
-                ?.lowercase()
-                ?: continue
+            val path = handle.info().command().orElse(null) ?: continue
+            val executable = path
+                .substringAfterLast('\\')
+                .substringAfterLast('/')
+                .lowercase()
 
             if (executable !in blocked) continue
+            // Checked here, not only where the list is chosen: a name typed by hand must never be
+            // able to point this at something Windows needs to keep running.
+            if (ProtectedProcesses.isProtected(executable, path)) continue
             // An app the person consciously unblocked, with a note, is theirs for the window.
             if (sessionManager.isAppTemporarilyAllowed(executable)) continue
 
