@@ -24,6 +24,9 @@ Works with the JDK bundled in Android Studio — set `JAVA_HOME` to
   the paper somewhere you have to get up to reach.
 - **Blocking.** While a session runs, blocked apps are closed. Pick them from the curated groups
   or from whatever is running on your machine.
+- **A way through.** Letting an app past costs a sentence about why and lasts fifteen minutes,
+  after which the boundary returns. The reason is kept in the journal, against the app it was
+  given for. It is a boundary rather than a wall, and this is the door.
 - **The tray.** Closing the window leaves the app watching from the tray. Quitting is in the tray
   menu — this is meant to be friction, not a cage, but it has to be chosen.
 - **Starting with Windows.** Offered from the installed app. It writes `HaoShield.cmd` into your
@@ -54,8 +57,7 @@ plain app image with no installer. The property leaves the JDK used for everythi
 
 ## Not there yet
 
-No unblocking an app mid-session with a note — on the phone that is the gentle way past a
-boundary, and here there is currently no way past at all except ending the time.
-
 No way to end a desktop session with the Shield your *phone* registered: the two apps keep their
 own. Pairing them is the interesting next step, and the reason the token format is shared already.
+
+No installer is built here yet — see packaging above, which needs a JDK this repo does not carry.

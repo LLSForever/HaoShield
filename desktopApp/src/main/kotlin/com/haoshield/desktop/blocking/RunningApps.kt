@@ -40,6 +40,18 @@ object ProtectedProcesses {
     }
 }
 
+/**
+ * The one spelling of a process name that everything agrees on.
+ *
+ * Windows does not care about case, so `Discord.exe` and `discord.exe` are the same app — but a map
+ * of temporary allowances does care. Letting an app through under one spelling and then checking
+ * for it under another would close it anyway, a minute after being told not to. Both sides of that
+ * conversation go through here.
+ */
+object ProcessName {
+    fun normalise(name: String): String = name.trim().lowercase(Locale.ROOT)
+}
+
 /** What is running right now, reduced to the things a person might reasonably set aside. */
 object RunningApps {
 

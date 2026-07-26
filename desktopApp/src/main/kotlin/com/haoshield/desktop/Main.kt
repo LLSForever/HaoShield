@@ -105,6 +105,7 @@ private fun ShieldWindow(graph: DesktopGraph) {
     var notice by remember { mutableStateOf<String?>(null) }
     var editingBlocklist by remember { mutableStateOf(false) }
     var readingJournal by remember { mutableStateOf(false) }
+    var unblocking by remember { mutableStateOf(false) }
     var reflection by remember { mutableStateOf<EndedSessionSummary?>(null) }
 
     // A time that has just ended may be worth pausing over. The session rules decide which ones
@@ -127,6 +128,12 @@ private fun ShieldWindow(graph: DesktopGraph) {
 
     if (readingJournal) {
         JournalScreen(graph, onBack = { readingJournal = false })
+        return
+    }
+
+    val unblockingFor = session?.session?.id
+    if (unblocking && unblockingFor != null) {
+        UnblockScreen(graph, unblockingFor, scope, onBack = { unblocking = false })
         return
     }
 
@@ -161,7 +168,9 @@ private fun ShieldWindow(graph: DesktopGraph) {
                 elapsedMillis = current.elapsedMillis,
                 isShieldSession = current.isShieldMode,
                 closedCount = closed,
+                allowedCount = current.temporarilyAllowedPackages.size,
                 scope = scope,
+                onUnblock = { unblocking = true },
                 onNotice = { notice = it },
             )
         }
@@ -336,7 +345,9 @@ private fun InSession(
     elapsedMillis: Long,
     isShieldSession: Boolean,
     closedCount: Int,
+    allowedCount: Int,
     scope: CoroutineScope,
+    onUnblock: () -> Unit,
     onNotice: (String?) -> Unit,
 ) {
     var typed by remember { mutableStateOf("") }
@@ -349,14 +360,21 @@ private fun InSession(
     )
 
     Text(
-        text = if (closedCount == 0) {
-            "Nothing has interrupted you."
-        } else {
-            "$closedCount closed while you worked."
+        text = when {
+            allowedCount > 0 -> "$allowedCount let through for now."
+            closedCount == 0 -> "Nothing has interrupted you."
+            else -> "$closedCount closed while you worked."
         },
         style = HaoTheme.type.caption,
         color = HaoTheme.colors.inkFaint,
         modifier = Modifier.padding(top = HaoTheme.spacing.md),
+    )
+
+    HaoTextLink(
+        text = "Let something through",
+        onClick = onUnblock,
+        color = HaoTheme.colors.inkSoft,
+        modifier = Modifier.padding(top = HaoTheme.spacing.lg),
     )
 
     if (isShieldSession) {

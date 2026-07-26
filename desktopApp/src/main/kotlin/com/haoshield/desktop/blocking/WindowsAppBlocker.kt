@@ -53,7 +53,7 @@ class WindowsAppBlocker(
         sessionManager.getActiveSession() ?: return
 
         val blocked = blockingRepository.getBlockedPackageNames()
-            .map(String::lowercase)
+            .map(ProcessName::normalise)
             .toSet()
         if (blocked.isEmpty()) return
 
@@ -65,10 +65,9 @@ class WindowsAppBlocker(
             if (handle.pid() == ownPid || !handle.isAlive) continue
 
             val path = handle.info().command().orElse(null) ?: continue
-            val executable = path
-                .substringAfterLast('\\')
-                .substringAfterLast('/')
-                .lowercase()
+            val executable = ProcessName.normalise(
+                path.substringAfterLast('\\').substringAfterLast('/'),
+            )
 
             if (executable !in blocked) continue
             // Checked here, not only where the list is chosen: a name typed by hand must never be
