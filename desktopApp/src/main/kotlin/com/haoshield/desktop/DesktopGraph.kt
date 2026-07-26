@@ -4,6 +4,7 @@ import com.haoshield.data.repository.BlockingRepositoryImpl
 import com.haoshield.data.repository.SessionRepositoryImpl
 import com.haoshield.data.repository.SettingsRepositoryImpl
 import com.haoshield.data.service.SessionManagerImpl
+import com.haoshield.data.shield.ShieldScanHandlerImpl
 import com.haoshield.data.shield.ShieldTokenStoreImpl
 import com.haoshield.desktop.blocking.WindowsAppBlocker
 import com.haoshield.desktop.data.DesktopBlockedAppsStore
@@ -19,6 +20,8 @@ import com.haoshield.domain.repository.JournalRepository
 import com.haoshield.domain.repository.SessionRepository
 import com.haoshield.domain.repository.SettingsRepository
 import com.haoshield.domain.service.SessionManager
+import com.haoshield.domain.service.ShieldScanHandler
+import com.haoshield.domain.service.ShieldTokenStore
 import com.haoshield.domain.service.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +52,7 @@ class DesktopGraph(directory: File = DesktopPreferences.appDirectory()) {
 
     // --- shared with Android ---
 
-    private val shieldTokenStore = ShieldTokenStoreImpl(shieldPreferences)
+    val shieldTokenStore: ShieldTokenStore = ShieldTokenStoreImpl(shieldPreferences)
 
     val sessionManager: SessionManager = SessionManagerImpl(
         sessionPreferencesDataStore = sessionStore,
@@ -64,6 +67,15 @@ class DesktopGraph(directory: File = DesktopPreferences.appDirectory()) {
         sessionManager = sessionManager,
         blockedAppsDataStore = blockedAppsStore,
         presets = WindowsBlockedAppPresets,
+    )
+
+    /**
+     * The same handler the phone uses. It decides what a presented Shield means — register it,
+     * start a session, or end one — so the desktop never re-implements that reasoning.
+     */
+    val shieldScanHandler: ShieldScanHandler = ShieldScanHandlerImpl(
+        shieldTokenStore = shieldTokenStore,
+        sessionManager = sessionManager,
     )
 
     val sessionRepository: SessionRepository = SessionRepositoryImpl(sessionManager)
