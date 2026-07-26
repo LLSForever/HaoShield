@@ -93,6 +93,10 @@ class SessionNotificationService : Service() {
     }
 
     override fun onDestroy() {
+        // This service lives exactly as long as the session, so it — not any screen — is what
+        // owns the ambient bed's lifetime. The sound ends when the session does, however the
+        // person happened to end it and whatever screen they were on.
+        ambientMusicPlayer.stop()
         observer?.cancel()
         scope.cancel()
         super.onDestroy()
@@ -134,17 +138,17 @@ class SessionNotificationService : Service() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(
-                0,
-                getString(
-                    if (ambientMusicPlayer.isPlaying()) {
-                        R.string.notification_pause_sound
-                    } else {
-                        R.string.notification_play_sound
-                    },
-                ),
-                toggleAudio,
-            )
+
+        // One control, showing what a press will do. An icon makes it read as a media button
+        // rather than another line of text competing with the intention.
+        val playing = ambientMusicPlayer.isPlaying()
+        builder.addAction(
+            if (playing) R.drawable.ic_notification_pause else R.drawable.ic_notification_play,
+            getString(
+                if (playing) R.string.notification_pause_sound else R.string.notification_play_sound,
+            ),
+            toggleAudio,
+        )
 
         // The platform counts up from the session's start — we post once, Android does the rest.
         active?.let { builder.setWhen(it.startedAtEpochMillis).setUsesChronometer(true) }
