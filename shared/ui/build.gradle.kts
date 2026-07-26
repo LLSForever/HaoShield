@@ -7,20 +7,21 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Step 3, foundation slice: the Compose Multiplatform toolchain is stood up here, but only the
-// Android target is wired for now. Every file lives in androidMain, so the theme, components and
-// content move out of :app unchanged. The desktop jvm() target — and migrating the portable files
-// into commonMain behind an expect/actual font seam — is the follow-up, paired with the ViewModel
-// work that forces the Hilt decision.
+// Step 3, follow-up: the desktop jvm() target now stands alongside Android. The design system —
+// theme, components, and the platform-free content — lives in commonMain and compiles for both.
+// The bundled fonts are the one Android-specific seam: an expect/actual (R.font on Android, a
+// placeholder on the JVM until a desktop app exists to render real type). The date/time journal
+// helpers that need java.* stay in androidMain for now.
 kotlin {
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+    jvm()
 
     sourceSets {
-        androidMain.dependencies {
+        commonMain.dependencies {
             implementation(project(":shared:domain"))
             implementation(compose.runtime)
             implementation(compose.foundation)

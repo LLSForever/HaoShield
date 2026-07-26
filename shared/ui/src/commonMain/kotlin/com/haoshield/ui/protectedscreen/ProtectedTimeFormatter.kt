@@ -7,10 +7,10 @@ object ProtectedTimeFormatter {
         val minutes = (totalSeconds % 3_600L) / 60L
         val seconds = totalSeconds % 60L
 
-        return if (hours > 0L) {
-            String.format("%d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            String.format("%02d:%02d", minutes, seconds)
-        }
+        // padStart rather than String.format: the latter is JVM-only, and this clock is shared.
+        val mm = minutes.toString().padStart(2, '0')
+        val ss = seconds.toString().padStart(2, '0')
+
+        return if (hours > 0L) "$hours:$mm:$ss" else "$mm:$ss"
     }
 }

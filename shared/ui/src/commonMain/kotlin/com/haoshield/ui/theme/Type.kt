@@ -2,12 +2,10 @@ package com.haoshield.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
-import com.haoshield.ui.R
 
 /**
  * Two families, a small set of sizes, set like a book rather than a dashboard.
@@ -45,27 +43,19 @@ import com.haoshield.ui.R
  * [NotoSerif] or [Inter] and accept the device's CJK fallback.
  */
 
-// Variable fonts: the requested FontWeight maps to the font's wght axis on API 26+ (our minSdk).
-private fun notoSerif(weight: FontWeight) = Font(resId = R.font.noto_serif_variable, weight = weight)
-
-private fun inter(weight: FontWeight) = Font(resId = R.font.inter_variable, weight = weight)
-
-val NotoSerif = FontFamily(
-    notoSerif(FontWeight.Normal),
-    notoSerif(FontWeight.Medium),
-)
+// The three families are provided per platform. Android loads the bundled variable fonts by
+// resource id — the requested FontWeight maps to the font's wght axis on API 26+ (our minSdk) —
+// while other platforms supply their own. See Fonts.android.kt and Fonts.jvm.kt.
+expect val NotoSerif: FontFamily
 
 /**
  * Four-glyph family: 好 真 善 忍 and nothing else — the app's own character set,
  * the ones named in [com.haoshield.domain.Hao]. Licence in
  * assets/licenses/NotoSerifSC-OFL.txt.
  */
-val NotoSerifHao = FontFamily(Font(resId = R.font.noto_serif_hao))
+expect val NotoSerifHao: FontFamily
 
-val Inter = FontFamily(
-    inter(FontWeight.Normal),
-    inter(FontWeight.Medium),
-)
+expect val Inter: FontFamily
 
 private val Trim = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
