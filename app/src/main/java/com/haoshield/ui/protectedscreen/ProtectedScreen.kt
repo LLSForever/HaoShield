@@ -25,9 +25,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,10 +49,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.util.lerp
+import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.haoshield.domain.model.SessionMode
@@ -143,17 +152,23 @@ fun ProtectedScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
+                // Reserve the keyboard's height, whatever a given keyboard's is, so the field it
+                // raises is never sat on. Falls back to the navigation bar when no keyboard is up.
+                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                 .padding(horizontal = HaoTheme.spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Weighted so the still centre sits a little above the middle, leaving the lower
-            // half room to breathe rather than crowding everything against the bottom edge.
-            Spacer(modifier = Modifier.weight(0.8f))
+            // half room to breathe. While writing, the top weight eases down so the field rises
+            // into the upper half — with the keyboard up, that is the only space to rise into.
+            Spacer(modifier = Modifier.weight(lerp(0.5f, 0.8f, stillness)))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.graphicsLayer { alpha = stillness },
+                // Withdraw from the layout as well as the eye: as this fades it also gives up its
+                // height, so the field below climbs into the freed space instead of the field
+                // staying pinned low with a tall empty gap where the clock used to be.
+                modifier = Modifier.withdraw(stillness),
             ) {
                 Text(
                     text = "好",
@@ -207,7 +222,7 @@ fun ProtectedScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1.2f))
+            Spacer(modifier = Modifier.weight(lerp(1.5f, 1.2f, stillness)))
 
             // The invitation to name the time — the one thing that stays present while writing.
             AnimatedVisibility(
@@ -260,7 +275,7 @@ fun ProtectedScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(top = HaoTheme.spacing.xl)
-                    .graphicsLayer { alpha = stillness },
+                    .withdraw(stillness),
             ) {
                 uiState.endSessionHint?.let { hint ->
                     Text(
@@ -368,6 +383,19 @@ private fun RestingSurface(onWake: () -> Unit) {
     }
 }
 
+/**
+ * Fade a piece of the screen out *and* let it surrender its height at the same rate, so siblings
+ * below rise into the space rather than leaving a hole where the faded content still stands. At
+ * [fraction] 1 it is an identity (full height, full opacity); at 0 it occupies nothing.
+ */
+private fun Modifier.withdraw(fraction: Float): Modifier = this
+    .graphicsLayer { alpha = fraction }
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val height = (placeable.height * fraction).roundToInt()
+        layout(placeable.width, height) { placeable.place(0, 0) }
+    }
+
 private const val RESTING_BRIGHTNESS = 0.01f
 
 /** How long the rest-the-screen gesture is explained before the screen falls quiet. */
@@ -398,6 +426,8 @@ private fun EmergencyExitPanel(
             .background(HaoTheme.colors.paper)
             .statusBarsPadding()
             .navigationBarsPadding()
+            // The note field raises the keyboard; keep the panel's content above it.
+            .imePadding()
             .padding(horizontal = HaoTheme.spacing.xl, vertical = HaoTheme.spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

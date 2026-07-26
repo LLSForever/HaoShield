@@ -112,6 +112,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         when {
             // Our own windows (protected overlay, unblock screen) manage the boundary explicitly.
             packageName == applicationContext.packageName -> return
+            // The soft keyboard is a separate package attached to whatever is underneath. A blocked
+            // app that auto-focuses its input (a chat app, say) raises it, and the IME's own window
+            // events would otherwise read as a foreground change and tear the boundary down — which
+            // then re-asserts on the next app event, flickering the block screen. It is never the
+            // foreground app; leave the boundary exactly as it is.
+            packageName == currentInputMethodPackage() -> return
             // Recents / notification shade / transient system windows: keep the boundary up so a
             // blocked app isn't exposed underneath. Tearing it down here is how the app-switch
             // escape happened — the overlay vanished and never re-appeared on return.
@@ -126,6 +132,17 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             }
         }
     }
+
+    /**
+     * The package of the active soft keyboard, e.g. "com.google.android.inputmethod.latin", read
+     * from the current default IME. Read live rather than cached so switching keyboard mid-session
+     * is honoured; the value is a cheap settings lookup and window events are already throttled.
+     */
+    private fun currentInputMethodPackage(): String? = runCatching {
+        Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+            ?.substringBefore('/')
+            ?.takeIf { it.isNotBlank() }
+    }.getOrNull()
 
     private fun scheduleAllowanceRecheck(packageName: String) {
         recheckJob = serviceScope.launch {
