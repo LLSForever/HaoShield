@@ -111,8 +111,10 @@ private fun JournalSession(group: JournalSessionGroup) {
 }
 
 private val ILLUSTRATION_SIZE = 180.dp
-private val MOUNTAIN_WIDTH = 200.dp
-private val MOUNTAIN_HEIGHT = 105.dp
+// The range is drawn wide and low (roughly 2.8:1), so it sits along the foot of the page rather
+// than filling a corner.
+private val MOUNTAIN_WIDTH = 240.dp
+private val MOUNTAIN_HEIGHT = 85.dp
 
 @Composable
 private fun JournalEmptyState(modifier: Modifier = Modifier) {
