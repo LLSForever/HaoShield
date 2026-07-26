@@ -46,18 +46,35 @@ itself. Ending `csrss.exe` does not distract the machine, it takes it down.
 ## Packaging an installer
 
 Needs a full JDK — `jpackage` is not in Android Studio's bundled runtime — and, for MSI, WiX
-Toolset v3 on PATH.
+Toolset **v3** on PATH. WiX 4 and later will not do; `jpackage` drives `candle.exe` and
+`light.exe`, which v3 is the last to ship.
 
 ```
-gradlew :desktopApp:packageMsi -Phaoshield.packagingJdk="C:\path\to\jdk-21"
+winget install EclipseAdoptium.Temurin.21.JDK
+winget install WiXToolset.WiXToolset
 ```
 
-Use `packageDistributionForCurrentOS` for the default format, or `createDistributable` for a
-plain app image with no installer. The property leaves the JDK used for everything else alone.
+Then, with `C:\Program Files (x86)\WiX Toolset v3.14\bin` on PATH:
+
+```
+gradlew :desktopApp:packageMsi -Phaoshield.packagingJdk="C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
+```
+
+The result is `build/compose/binaries/main/msi/Hao Shield-1.0.0.msi`, around 59 MB because it
+carries its own Java runtime and needs nothing installed to run. `createDistributable` gives the
+same application as a plain folder with no installer, which is the quicker thing to test against.
+The property leaves the JDK used for everything else alone.
+
+One trap, since it fails with nothing but an exit code: an MSI's strings live in code page 1252,
+and WiX refuses rather than transliterating anything outside it. The vendor and package names here
+are deliberately plain `Hao Shield` for that reason. The app still wears the caron everywhere it
+controls the encoding — the window title reads Hǎo Shield.
 
 ## Not there yet
 
 No way to end a desktop session with the Shield your *phone* registered: the two apps keep their
 own. Pairing them is the interesting next step, and the reason the token format is shared already.
 
-No installer is built here yet — see packaging above, which needs a JDK this repo does not carry.
+The installer is not signed, so Windows SmartScreen will warn about an unknown publisher on a
+machine that did not build it. Signing needs a certificate, which is a decision rather than a
+build step.

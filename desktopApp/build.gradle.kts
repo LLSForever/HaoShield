@@ -56,7 +56,10 @@ compose.desktop {
             packageName = "Hao Shield"
             packageVersion = "1.0.0"
             description = "Set this time aside."
-            vendor = "Hǎo Shield"
+            // Deliberately without the caron. An MSI's strings live in code page 1252, which has
+            // no ǎ, and WiX fails the build outright rather than transliterating. The app wears
+            // its own name properly everywhere it controls the encoding; the installer cannot.
+            vendor = "Hao Shield"
         }
     }
 }
