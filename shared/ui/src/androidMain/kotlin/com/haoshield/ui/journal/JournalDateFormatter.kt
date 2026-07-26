@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-internal object JournalDateFormatter {
+object JournalDateFormatter {
     private val formatter = SimpleDateFormat("MMM d, yyyy · h:mm a", Locale.getDefault())
     private val dayFormatter = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
     private val timeFormatter = SimpleDateFormat("h:mm a", Locale.getDefault())

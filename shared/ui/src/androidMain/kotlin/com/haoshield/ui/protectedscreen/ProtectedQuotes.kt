@@ -1,6 +1,6 @@
 package com.haoshield.ui.protectedscreen
 
-internal val ProtectedQuotes = listOf(
+val ProtectedQuotes = listOf(
     "Return to what is already good within you.",
     "Attention is a gentle practice, not a punishment.",
     "Stillness reveals what hurry conceals.",

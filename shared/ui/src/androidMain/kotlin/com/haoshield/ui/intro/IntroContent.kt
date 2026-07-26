@@ -1,13 +1,13 @@
 package com.haoshield.ui.intro
 
 /** The first-run introduction — the app's philosophy, in the author's words. */
-internal data class IntroPage(
+data class IntroPage(
     val title: String,
     val paragraphs: List<String>,
     val showGlyph: Boolean = false,
 )
 
-internal val IntroPages = listOf(
+val IntroPages = listOf(
     IntroPage(
         title = "The Nature of Hǎo",
         showGlyph = true,

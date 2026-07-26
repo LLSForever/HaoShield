@@ -1,12 +1,12 @@
 package com.haoshield.ui.guide
 
-internal data class GuideStepContent(
+data class GuideStepContent(
     val number: Int,
     val title: String,
     val body: String,
 )
 
-internal object MakeShieldGuideContent {
+object MakeShieldGuideContent {
     const val screenTitle = "Make Your Own Shield"
 
     const val subtitle =

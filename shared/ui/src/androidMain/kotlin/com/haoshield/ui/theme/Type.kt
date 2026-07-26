@@ -7,7 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
-import com.haoshield.R
+import com.haoshield.ui.R
 
 /**
  * Two families, a small set of sizes, set like a book rather than a dashboard.

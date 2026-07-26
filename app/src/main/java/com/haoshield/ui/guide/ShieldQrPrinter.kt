@@ -19,7 +19,9 @@ import android.print.PrintDocumentInfo
 import android.print.PrintManager
 import android.print.pdf.PrintedPdfDocument
 import androidx.core.content.res.ResourcesCompat
-import com.haoshield.R
+// The bundled 好 font now lives in :shared:ui; with non-transitive R classes its resources are
+// under that module's R, not the app's.
+import com.haoshield.ui.R
 import java.io.FileOutputStream
 
 /**

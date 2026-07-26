@@ -1,6 +1,6 @@
 package com.haoshield.ui.protectedscreen
 
-internal object ProtectedTimeFormatter {
+object ProtectedTimeFormatter {
     fun format(elapsedMillis: Long): String {
         val totalSeconds = (elapsedMillis / 1_000L).coerceAtLeast(0L)
         val hours = totalSeconds / 3_600L
