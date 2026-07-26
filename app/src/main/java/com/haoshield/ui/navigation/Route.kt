@@ -16,7 +16,15 @@ sealed class Route(val path: String) {
 
     data object Permissions : Route("permissions")
 
-    data object Protected : Route("protected")
+    /**
+     * The running session. The optional argument opens the without-your-Shield flow on arrival,
+     * so Settings can reach it without a second copy of that panel existing.
+     */
+    data object Protected : Route("protected?emergency={emergency}") {
+        const val ARG_EMERGENCY = "emergency"
+
+        fun createRoute(emergency: Boolean = false): String = "protected?emergency=$emergency"
+    }
 
     data object Reflection : Route("reflection")
 

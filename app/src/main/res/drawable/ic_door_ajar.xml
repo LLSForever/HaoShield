@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A door standing ajar, at the very foot of Settings.
+
+  The way out of a session without your Shield is for emergencies only, so it is drawn rather
+  than written: no label explaining itself, no words competing with the page. You find it the way
+  you find a door — by looking for one. Single-weight ink line, to sit with the window and the
+  mountains rather than with the type.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="34dp"
+    android:height="48dp"
+    android:viewportWidth="40"
+    android:viewportHeight="56">
+
+    <!-- The doorway. -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M6,3 L34,3 L34,53 L6,53"
+        android:strokeColor="#7A8377"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.6" />
+
+    <!-- The door itself, swung open towards you. -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M6,3 L21,9 L21,47 L6,53"
+        android:strokeColor="#7A8377"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.6" />
+
+    <!-- The handle. -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M17.5,28 L19,28"
+        android:strokeColor="#7A8377"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
+</vector>

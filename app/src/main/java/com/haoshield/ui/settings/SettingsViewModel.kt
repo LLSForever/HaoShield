@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.haoshield.data.blocking.StrictBlockingController
 import com.haoshield.data.root.RootShell
 import com.haoshield.domain.model.BlockingMode
+import com.haoshield.domain.model.SessionMode
 import com.haoshield.domain.model.ShieldTokenKind
 import com.haoshield.domain.model.ThemePreference
 import com.haoshield.domain.repository.BlockingRepository
 import com.haoshield.domain.repository.SettingsRepository
+import com.haoshield.domain.service.SessionManager
 import com.haoshield.domain.service.ShieldTokenStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -33,6 +35,8 @@ data class SettingsUiState(
     val strictBlocking: Boolean = false,
     val rootAvailable: Boolean = false,
     val theme: ThemePreference = ThemePreference.SYSTEM,
+    /** A Shield session is running, so the door at the foot of the page leads somewhere. */
+    val canLeaveWithoutShield: Boolean = false,
 ) {
     val hasAnyToken: Boolean get() = hasNfcToken || hasQrToken
 }
@@ -51,6 +55,7 @@ class SettingsViewModel @Inject constructor(
     rootShell: RootShell,
     shieldTokenStore: ShieldTokenStore,
     blockingRepository: BlockingRepository,
+    sessionManager: SessionManager,
 ) : ViewModel() {
 
     // Passive check (no su invocation, no root prompt) — just whether Strict mode can be offered.
@@ -68,8 +73,10 @@ class SettingsViewModel @Inject constructor(
         shieldTokenStore.observeRegisteredTokens(),
         blockingRepository.observeBlockedGroups(),
         sessionToggles,
-    ) { mode, tokens, groups, toggles ->
+        sessionManager.observeSessionState(),
+    ) { mode, tokens, groups, toggles, session ->
         SettingsUiState(
+            canLeaveWithoutShield = session?.session?.mode == SessionMode.SHIELD,
             mode = mode,
             hasNfcToken = tokens.any { it.kind == ShieldTokenKind.NFC },
             hasQrToken = tokens.any { it.kind == ShieldTokenKind.QR },

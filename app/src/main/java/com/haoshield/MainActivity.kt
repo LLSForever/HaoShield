@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
                     shieldScanHandler.observeScanResults().collect { result ->
                         when (result) {
                             is ShieldScanResult.SessionStarted -> {
-                                navController.navigate(Route.Protected.path) {
+                                navController.navigate(Route.Protected.createRoute()) {
                                     popUpTo(Route.Home.path) { inclusive = false }
                                     launchSingleTop = true
                                 }
@@ -169,7 +169,7 @@ class MainActivity : ComponentActivity() {
                 val openSession = pendingOpenSession.value
                 LaunchedEffect(openSession) {
                     if (openSession) {
-                        navController.navigate(Route.Protected.path) {
+                        navController.navigate(Route.Protected.createRoute()) {
                             popUpTo(Route.Home.path) { inclusive = false }
                             launchSingleTop = true
                         }

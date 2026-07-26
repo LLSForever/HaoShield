@@ -76,7 +76,7 @@ fun HaoShieldNavHost(
             HomeScreen(
                 onNavigate = navController::navigate,
                 onNavigateToProtected = {
-                    navController.navigate(Route.Protected.path) {
+                    navController.navigate(Route.Protected.createRoute()) {
                         popUpTo(Route.Home.path) { inclusive = false }
                         launchSingleTop = true
                     }
@@ -86,7 +86,7 @@ fun HaoShieldNavHost(
         composable(Route.Setup.path) {
             SetupScreen(
                 onNavigateToProtected = {
-                    navController.navigate(Route.Protected.path) {
+                    navController.navigate(Route.Protected.createRoute()) {
                         popUpTo(Route.Home.path) { inclusive = false }
                         launchSingleTop = true
                     }
@@ -101,6 +101,14 @@ fun HaoShieldNavHost(
                 onNavigateToPermissions = { navController.navigate(Route.Permissions.path) },
                 onNavigateToIntro = { navController.navigate(Route.Intro.path) },
                 onNavigateToBlockedApps = { navController.navigate(Route.BlockedApps.path) },
+                // The door reuses the session's own without-your-Shield flow rather than a
+                // second copy of it living here.
+                onLeaveWithoutShield = {
+                    navController.navigate(Route.Protected.createRoute(emergency = true)) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(Route.Permissions.path) {
@@ -110,13 +118,21 @@ fun HaoShieldNavHost(
         }
         composable(
             route = Route.Protected.path,
+            arguments = listOf(
+                navArgument(Route.Protected.ARG_EMERGENCY) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
             // Entering and leaving a session is the app's most meaningful transition — slower.
             enterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
             exitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
             popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
             popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
-        ) {
+        ) { entry ->
             ProtectedScreen(
+                openEmergencyExit = entry.arguments
+                    ?.getBoolean(Route.Protected.ARG_EMERGENCY) == true,
                 onNavigateHome = {
                     navController.navigate(Route.Home.path) {
                         popUpTo(Route.Home.path) { inclusive = true }

@@ -6,8 +6,11 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,10 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.haoshield.R
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.domain.model.ThemePreference
 import com.haoshield.ui.components.HaoBackLink
@@ -44,6 +53,7 @@ fun SettingsScreen(
     onNavigateToPermissions: () -> Unit,
     onNavigateToIntro: () -> Unit,
     onNavigateToBlockedApps: () -> Unit,
+    onLeaveWithoutShield: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -174,9 +184,46 @@ fun SettingsScreen(
         LinkRow(title = "Permissions", onClick = onNavigateToPermissions)
         LinkRow(title = "Replay introduction", onClick = onNavigateToIntro)
 
-        Spacer(modifier = Modifier.padding(bottom = HaoTheme.spacing.xxl))
+        // The way out, drawn rather than written. It stands at the very foot of the page, unnamed
+        // and unexplained; while a Shield session is running it opens, and otherwise it is simply
+        // a door in the wall. An emergency exit shouldn't need a signpost — only a door.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = HaoTheme.spacing.xxl, bottom = HaoTheme.spacing.xl),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_door_ajar),
+                contentDescription = "End the session without your Shield"
+                    .takeIf { uiState.canLeaveWithoutShield },
+                modifier = Modifier
+                    .size(width = DOOR_WIDTH, height = DOOR_HEIGHT)
+                    .then(
+                        if (uiState.canLeaveWithoutShield) {
+                            Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onLeaveWithoutShield,
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+                colorFilter = ColorFilter.tint(
+                    if (uiState.canLeaveWithoutShield) {
+                        HaoTheme.colors.inkSoft
+                    } else {
+                        HaoTheme.colors.stone
+                    },
+                ),
+            )
+        }
     }
 }
+
+private val DOOR_WIDTH = 34.dp
+private val DOOR_HEIGHT = 48.dp
 
 @Composable
 private fun ModeRow(
