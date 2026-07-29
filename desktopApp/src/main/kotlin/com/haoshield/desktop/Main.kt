@@ -106,6 +106,7 @@ private fun ShieldWindow(graph: DesktopGraph) {
     var editingBlocklist by remember { mutableStateOf(false) }
     var readingJournal by remember { mutableStateOf(false) }
     var unblocking by remember { mutableStateOf(false) }
+    var makingShield by remember { mutableStateOf(false) }
     var reflection by remember { mutableStateOf<EndedSessionSummary?>(null) }
 
     // A time that has just ended may be worth pausing over. The session rules decide which ones
@@ -131,6 +132,16 @@ private fun ShieldWindow(graph: DesktopGraph) {
         return
     }
 
+    if (makingShield) {
+        MakeYourShield(
+            graph = graph,
+            scope = scope,
+            onBack = { makingShield = false },
+            onNotice = { notice = it },
+        )
+        return
+    }
+
     val unblockingFor = session?.session?.id
     if (unblocking && unblockingFor != null) {
         UnblockScreen(graph, unblockingFor, scope, onBack = { unblocking = false })
@@ -153,11 +164,13 @@ private fun ShieldWindow(graph: DesktopGraph) {
         val current = session
 
         when {
-            tokens.isEmpty() -> MakeYourShield(graph, scope) { notice = it }
-
+            // A running session comes first, always. Anything else on top of it would hide the one
+            // thing the window exists to show.
             current == null -> AtRest(
                 graph = graph,
                 scope = scope,
+                hasShield = tokens.isNotEmpty(),
+                onMakeShield = { makingShield = true },
                 onEditBlocklist = { editingBlocklist = true },
                 onReadJournal = { readingJournal = true },
                 onNotice = { notice = it },
@@ -200,6 +213,7 @@ private fun ShieldWindow(graph: DesktopGraph) {
 private fun MakeYourShield(
     graph: DesktopGraph,
     scope: CoroutineScope,
+    onBack: () -> Unit,
     onNotice: (String?) -> Unit,
 ) {
     val payload = remember { ShieldQr.newPayload() }
@@ -209,6 +223,13 @@ private fun MakeYourShield(
         graph.shieldTokenStore.setPendingQrPayload(payload)
     }
 
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(HaoTheme.spacing.screenH),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
     Text(
         text = "Write this down, then type it back.",
         style = HaoTheme.type.voice,
@@ -257,16 +278,30 @@ private fun MakeYourShield(
                     mode = ScanMode.REGISTRATION,
                 )
                 onNotice(result.describe())
+                if (result is ShieldScanResult.RegistrationComplete) onBack()
             }
         },
         modifier = Modifier.padding(top = HaoTheme.spacing.md),
     )
+
+        HaoTextLink(
+            text = "Not now",
+            onClick = {
+                onNotice(null)
+                onBack()
+            },
+            color = HaoTheme.colors.inkFaint,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+        )
+    }
 }
 
 @Composable
 private fun AtRest(
     graph: DesktopGraph,
     scope: CoroutineScope,
+    hasShield: Boolean,
+    onMakeShield: () -> Unit,
     onEditBlocklist: () -> Unit,
     onReadJournal: () -> Unit,
     onNotice: (String?) -> Unit,
@@ -281,26 +316,48 @@ private fun AtRest(
         modifier = Modifier.padding(top = HaoTheme.spacing.lg),
     )
 
-    HaoPrimaryButton(
-        text = "Begin, with your Shield",
-        onClick = {
-            scope.launch {
-                onNotice(graph.presentShield(SHIELD_START_PLACEHOLDER).describe())
-            }
-        },
-        modifier = Modifier.padding(top = HaoTheme.spacing.xl),
-    )
+    // An open time asks nothing of anyone. Only Shield Mode needs a Shield, so making one is
+    // offered rather than demanded — the app is usable from the first moment it opens.
+    if (hasShield) {
+        HaoPrimaryButton(
+            text = "Begin, with your Shield",
+            onClick = {
+                scope.launch {
+                    onNotice(graph.presentShield(SHIELD_START_PLACEHOLDER).describe())
+                }
+            },
+            modifier = Modifier.padding(top = HaoTheme.spacing.xl),
+        )
 
-    HaoSecondaryButton(
-        text = "Begin, openly",
-        onClick = {
-            scope.launch {
-                graph.sessionManager.startSession(SessionMode.SOFTWARE)
-                onNotice(null)
-            }
-        },
-        modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-    )
+        HaoSecondaryButton(
+            text = "Begin, openly",
+            onClick = {
+                scope.launch {
+                    graph.sessionManager.startSession(SessionMode.SOFTWARE)
+                    onNotice(null)
+                }
+            },
+            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+        )
+    } else {
+        HaoPrimaryButton(
+            text = "Begin",
+            onClick = {
+                scope.launch {
+                    graph.sessionManager.startSession(SessionMode.SOFTWARE)
+                    onNotice(null)
+                }
+            },
+            modifier = Modifier.padding(top = HaoTheme.spacing.xl),
+        )
+
+        HaoTextLink(
+            text = "Make a Shield",
+            onClick = onMakeShield,
+            color = HaoTheme.colors.inkSoft,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+        )
+    }
 
     HaoTextLink(
         text = "${blocked.size} apps set aside",

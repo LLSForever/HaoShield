@@ -65,6 +65,9 @@ carries its own Java runtime and needs nothing installed to run. `createDistribu
 same application as a plain folder with no installer, which is the quicker thing to test against.
 The property leaves the JDK used for everything else alone.
 
+Installing over an existing copy of the *same* version fails with 1638 — Windows Installer will
+not reinstall a version it already has. Bump `packageVersion`, or uninstall first.
+
 One trap, since it fails with nothing but an exit code: an MSI's strings live in code page 1252,
 and WiX refuses rather than transliterating anything outside it. The vendor and package names here
 are deliberately plain `Hao Shield` for that reason. The app still wears the caron everywhere it

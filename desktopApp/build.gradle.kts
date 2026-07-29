@@ -60,6 +60,17 @@ compose.desktop {
             // no ǎ, and WiX fails the build outright rather than transliterating. The app wears
             // its own name properly everywhere it controls the encoding; the installer cannot.
             vendor = "Hao Shield"
+
+            windows {
+                // Without these the app installs correctly and then cannot be found: no Start menu
+                // entry, nothing to search for, only a folder under Program Files.
+                menuGroup = "Hao Shield"
+                shortcut = true
+
+                // Stable across versions, so installing 1.0.1 replaces 1.0.0 rather than sitting
+                // beside it. Generated once and never to be changed.
+                upgradeUuid = "6f3a1c58-9d24-4e77-b0a1-2c5f8e7d4a13"
+            }
         }
     }
 }
