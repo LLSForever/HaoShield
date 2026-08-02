@@ -14,3 +14,5 @@ output.json
 
 # Build output that shouldn't be tracked
 /app/debug/
+# Raw Midjourney renders — processed copies ship in res/, sources stay local
+/Expanded art/
