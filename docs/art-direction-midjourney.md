@@ -121,3 +121,37 @@ Interchangeable horizontal bands for list headers, section breaks, empty states:
    screen; sized like the existing two (roughly 200–240dp wide); never behind text; never
    competing with the 好 glyph on screens the glyph anchors. If a screen already feels
    calm, it does not need a picture.
+
+---
+
+## The renders — accepted set, names, and sizes
+
+Fourteen renders were accepted (2026-08-02). Process each with `scripts/prepare_art.py`
+(`SRC ill_name WIDTH_PX --trim`); widths are 3× the placement dp for `drawable-xxhdpi`.
+
+| # | Render | Asset name | dp (w) | px (w) | Placement | Tint |
+|---|--------|-----------|--------|--------|-----------|------|
+| 1 | Mother & child under plum branch | `ill_intro_nature` | 220 | 660 | Intro 1 | inkSoft |
+| 2 | Moon over rippled water | `ill_intro_pulled` | 220 | 660 | Intro 2 | inkSoft |
+| 3 | Moon gate onto misty ridge | `ill_intro_space` | 220 | 660 | Intro 3 | inkSoft |
+| 4 | Thatched pavilion, teapot, two cups | `ill_intro_offers` | 220 | 660 | Intro 4 | inkSoft |
+| 5 | Hand placing the token | `ill_intro_works` | 220 | 660 | Intro 5 | inkSoft |
+| 6 | Temple roof among pines over mist | `ill_home_temple` | 240 | 720 | Home, beneath content | inkFaint |
+| 7 | Incense stick, thread of smoke | `ill_session_incense` | 120 | 360 | Session screen | inkFaint |
+| 8 | Temple bell hanging still | `ill_overlay_bell` | 160 | 480 | Blocking overlay | values/values-night colour |
+| 9 | Hands folding paper | `ill_guide_folding` | 220 | 660 | Make Shield guide | inkSoft |
+| 10 | Brush, inkstone, blank sheet | `ill_unblock_brush` | 200 | 600 | Unblock / intention | inkSoft |
+| 11 | Skein of red-crowned cranes | `ill_div_cranes` | 300 | 900 | Wide divider | **--keep-color**, no tint |
+| 12 | Pine ridgeline | `ill_div_pines` | 300 | 900 | Wide divider / journal alt | stone |
+| 13 | Crane in still water | `ill_reflection_crane` | 220 | 660 | End-of-session reflection | inkSoft |
+| 14 | Wind-bent reeds by water | `ill_div_reeds` | 300 | 900 | Wide divider | stone |
+
+Notes:
+- **The cranes (#11)** carry their red crowns — the palette's one accent, arrived by
+  itself. Keep the colour (`--keep-color`), never tint, and if it reads too dark at dusk
+  give it a `drawable-night` variant (recolour ink → `#A8B5A5`, crowns → `#C0705C`).
+- **The bell (#8)** sits on the blocking overlay, which is a plain View layout — tint via
+  `app:tint`/ImageView colour resource backed by `values` + `values-night`, like the
+  overlay's other colours.
+- Tint emphasis follows the journal precedent: content-adjacent pieces at `inkSoft`,
+  ambient/background pieces at `inkFaint` or `stone`. Art whispers.
