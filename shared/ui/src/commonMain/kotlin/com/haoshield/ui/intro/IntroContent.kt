@@ -5,18 +5,30 @@ data class IntroPage(
     val title: String,
     val paragraphs: List<String>,
     val showGlyph: Boolean = false,
+    /** 真善忍, when a page names them — each set on its own line, given room. */
+    val virtues: List<IntroVirtue> = emptyList(),
+)
+
+/** One of the three qualities: its character, its reading, and its sense. */
+data class IntroVirtue(
+    val glyph: String,
+    val pinyin: String,
+    val meaning: String,
 )
 
 val IntroPages = listOf(
     IntroPage(
         title = "The Nature of Hǎo",
-        showGlyph = true,
         paragraphs = listOf(
             "In its deepest sense, Hǎo points to our innate true nature — the original goodness " +
                 "and harmony that already exists within us. It is not something we must create " +
                 "from nothing, but something we can return to and cultivate.",
-            "This inner nature naturally resonates with 真善忍 — Truthfulness, Compassion, and " +
-                "Forbearance.",
+            "This inner nature naturally resonates with:",
+        ),
+        virtues = listOf(
+            IntroVirtue(glyph = "真", pinyin = "Zhēn", meaning = "Truthfulness"),
+            IntroVirtue(glyph = "善", pinyin = "Shàn", meaning = "Compassion"),
+            IntroVirtue(glyph = "忍", pinyin = "Rěn", meaning = "Forbearance"),
         ),
     ),
     IntroPage(

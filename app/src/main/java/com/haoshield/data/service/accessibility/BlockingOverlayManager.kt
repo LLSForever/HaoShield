@@ -62,6 +62,10 @@ class BlockingOverlayManager @Inject constructor(
         }
     }
 
+    /** Whether the boundary is currently attached and covering the screen. */
+    val isShowing: Boolean
+        get() = attached
+
     fun canDrawOverlay(): Boolean = Settings.canDrawOverlays(context)
 
     /**

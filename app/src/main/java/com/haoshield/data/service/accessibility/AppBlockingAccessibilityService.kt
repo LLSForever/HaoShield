@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import com.haoshield.MainActivity
@@ -123,6 +124,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             // escape happened — the overlay vanished and never re-appeared on return.
             packageName in TRANSIENT_SYSTEM_PACKAGES -> return
             blockingPolicy.shouldBlock(packageName) -> showBoundary(packageName, isRelock)
+            // While the boundary is up, the resting app has already been dismissed Home (see
+            // [showBoundary]), so the launcher coming forward is our own doing — and on gesture-nav
+            // devices the launcher also hosts the recents switcher. Tearing the boundary down here
+            // is exactly the app-switch escape. It comes down only by the user's choice, session
+            // end, or a genuinely allowed app taking the screen.
+            overlayManager.isShowing && isHomeApp(packageName) -> return
             else -> {
                 // A temporarily-unblocked app: schedule the boundary's return at expiry, so it
                 // re-covers even if the user never leaves the app. Otherwise only dismiss on a
@@ -183,6 +190,22 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             },
             isRelock = isRelock,
         )
+
+        // Dismiss the resting app rather than leaving it live underneath. The overlay is not part
+        // of the app's task, so a merely-covered app keeps its real surface — which the recents
+        // switcher shows, fully readable. Sent Home, there is nothing behind the boundary to
+        // expose, and the boundary itself stays up (see the launcher guard in [evaluate]).
+        performGlobalAction(GLOBAL_ACTION_HOME)
+    }
+
+    /**
+     * Any installed launcher, resolved live so OEM launchers and a changed default are honoured.
+     * Only consulted while the boundary is showing, so the query cost is off the hot path.
+     */
+    private fun isHomeApp(packageName: String): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager.queryIntentActivities(home, PackageManager.MATCH_DEFAULT_ONLY)
+            .any { it.activityInfo.packageName == packageName }
     }
 
     private fun hideBoundary() {

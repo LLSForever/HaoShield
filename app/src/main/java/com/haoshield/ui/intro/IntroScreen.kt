@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoTextLink
+import com.haoshield.ui.components.haoSealed
 import com.haoshield.ui.theme.HaoMotion
 import com.haoshield.ui.theme.HaoTheme
 import kotlinx.coroutines.launch
@@ -130,8 +132,9 @@ private fun IntroPageContent(page: IntroPage) {
             Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
         }
 
+        // "Hǎo" in a title carries its own character beside it, set as the page's one seal.
         Text(
-            text = page.title,
+            text = haoSealed(page.title),
             style = HaoTheme.type.display,
             color = HaoTheme.colors.ink,
         )
@@ -145,7 +148,45 @@ private fun IntroPageContent(page: IntroPage) {
             )
         }
 
+        if (page.virtues.isNotEmpty()) {
+            Column(
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(HaoTheme.spacing.md),
+            ) {
+                page.virtues.forEach { virtue -> VirtueRow(virtue) }
+            }
+        }
+
         Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+    }
+}
+
+/**
+ * One of 真善忍, set on its own line: the character large in the app's own glyph family, its
+ * reading beside it in the serif voice, its sense beneath in the quiet register. Each quality
+ * gets the room a paragraph would — named, not listed.
+ */
+@Composable
+private fun VirtueRow(virtue: IntroVirtue) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = virtue.glyph,
+            style = HaoTheme.type.glyphMark,
+            color = HaoTheme.colors.ink,
+        )
+        Spacer(modifier = Modifier.width(HaoTheme.spacing.md))
+        Column {
+            Text(
+                text = virtue.pinyin,
+                style = HaoTheme.type.heading,
+                color = HaoTheme.colors.ink,
+            )
+            Text(
+                text = virtue.meaning,
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkSoft,
+            )
+        }
     }
 }
 
