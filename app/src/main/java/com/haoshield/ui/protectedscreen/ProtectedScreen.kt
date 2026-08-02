@@ -223,20 +223,25 @@ fun ProtectedScreen(
                     .padding(vertical = HaoTheme.spacing.md),
                 contentAlignment = Alignment.Center,
             ) {
-                AnimatedVisibility(
-                    visible = uiState.quoteVisible && uiState.currentQuote != null,
-                    enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                ) {
-                    Text(
-                        text = uiState.currentQuote.orEmpty(),
-                        // While the intention is being written, the quote withdraws with the rest.
-                        modifier = Modifier.graphicsLayer { alpha = stillness },
-                        style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
-                        color = HaoTheme.colors.inkSoft,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                // A plain alpha fade rather than AnimatedVisibility: the room is already held, so
+                // the quote only needs to appear and disappear, never to claim or release space.
+                // Remembering the last words lets a departing quote fade out still legible instead
+                // of vanishing to blank mid-fade.
+                var lastQuote by remember { mutableStateOf("") }
+                uiState.currentQuote?.let { lastQuote = it }
+                val quoteAlpha by animateFloatAsState(
+                    targetValue = if (uiState.quoteVisible && uiState.currentQuote != null) 1f else 0f,
+                    animationSpec = tween(durationMillis = HaoMotion.GENTLE),
+                    label = "quote",
+                )
+                Text(
+                    text = lastQuote,
+                    // While the intention is being written, the quote withdraws with the rest.
+                    modifier = Modifier.graphicsLayer { alpha = quoteAlpha * stillness },
+                    style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
+                    color = HaoTheme.colors.inkSoft,
+                    textAlign = TextAlign.Center,
+                )
             }
 
             // The invitation to name the time — the one thing that stays present while writing.
