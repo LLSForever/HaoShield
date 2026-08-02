@@ -159,9 +159,10 @@ fun ProtectedScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Weighted so the still centre sits a little above the middle, leaving the lower
-            // half room to breathe. While writing, the top weight eases down so the field rises
-            // into the upper half — with the keyboard up, that is the only space to rise into.
-            Spacer(modifier = Modifier.weight(lerp(0.5f, 0.8f, stillness)))
+            // half room to breathe. While writing, the space above the field collapses and the
+            // counterweight below it grows, so the field settles in the upper third of what the
+            // keyboard leaves visible — its own place, not wherever the keyboard shoves it.
+            Spacer(modifier = Modifier.weight(lerp(0.35f, 0.8f, stillness)))
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -194,35 +195,49 @@ fun ProtectedScreen(
                     textAlign = TextAlign.Center,
                 )
 
-                AnimatedVisibility(
-                    visible = showRestHint,
-                    exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                ) {
-                    Text(
-                        text = "Tap anywhere to rest the screen.",
-                        modifier = Modifier.padding(top = HaoTheme.spacing.sm),
-                        style = HaoTheme.type.caption,
-                        color = HaoTheme.colors.inkFaint,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                // The hint retires by fading alone — its line stays reserved, so the clock above
+                // does not step down when the words go.
+                val restHintAlpha by animateFloatAsState(
+                    targetValue = if (showRestHint) 1f else 0f,
+                    animationSpec = tween(durationMillis = HaoMotion.GENTLE),
+                    label = "restHint",
+                )
+                Text(
+                    text = "Tap anywhere to rest the screen.",
+                    modifier = Modifier
+                        .padding(top = HaoTheme.spacing.sm)
+                        .graphicsLayer { alpha = restHintAlpha },
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkFaint,
+                    textAlign = TextAlign.Center,
+                )
+            }
 
+            // The quote's own room: the flexible space below the still centre belongs to it, so a
+            // quote arriving or leaving changes nothing else's place — it surfaces and sinks in
+            // standing water. The clock above does not move.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(lerp(0.35f, 1.2f, stillness))
+                    .padding(vertical = HaoTheme.spacing.md),
+                contentAlignment = Alignment.Center,
+            ) {
                 AnimatedVisibility(
                     visible = uiState.quoteVisible && uiState.currentQuote != null,
                     enter = fadeIn(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
                     exit = fadeOut(animationSpec = tween(durationMillis = HaoMotion.GENTLE)),
-                    modifier = Modifier.padding(top = HaoTheme.spacing.xxl),
                 ) {
                     Text(
                         text = uiState.currentQuote.orEmpty(),
+                        // While the intention is being written, the quote withdraws with the rest.
+                        modifier = Modifier.graphicsLayer { alpha = stillness },
                         style = HaoTheme.type.voice.copy(fontStyle = FontStyle.Italic),
                         color = HaoTheme.colors.inkSoft,
                         textAlign = TextAlign.Center,
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.weight(lerp(1.5f, 1.2f, stillness)))
 
             // The invitation to name the time — the one thing that stays present while writing.
             AnimatedVisibility(
@@ -267,6 +282,11 @@ fun ProtectedScreen(
                     }
                 }
             }
+
+            // The counterweight: nothing at rest, most of the free space while writing — this is
+            // what holds the field up in the upper third instead of letting it sink to sit on the
+            // keyboard.
+            Spacer(modifier = Modifier.weight(lerp(1.3f, 0.01f, stillness)))
 
             // How this ends: one affordance, and one quiet way past it. A Shield session ends at
             // the Shield — saying so is enough. A button whose only job was to tell you to go and
