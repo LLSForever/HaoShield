@@ -1,7 +1,8 @@
 package com.haoshield.ui.journal
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -12,10 +13,14 @@ import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.domain.model.UnblockPolicy
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoPrimaryButton
@@ -100,7 +105,20 @@ fun UnblockAppScreen(
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        // Brush and inkstone beside a blank sheet, centred in the room between the field and
+        // the act — the writing things, waiting. Fit scales it down if the room runs short.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ill_unblock_brush),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(HaoTheme.colors.inkSoft),
+            )
+        }
 
         HaoPrimaryButton(
             text = if (uiState.isSubmitting) "Saving…" else "Unblock with intention",

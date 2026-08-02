@@ -155,3 +155,8 @@ Notes:
   overlay's other colours.
 - Tint emphasis follows the journal precedent: content-adjacent pieces at `inkSoft`,
   ambient/background pieces at `inkFaint` or `stone`. Art whispers.
+- **Where the wide dividers landed** (2026-08-02): the cranes close the Make Shield guide's
+  registration-success step (their crowns rhyming with the seal moment, with a generated
+  `drawable-night` variant); the pine ridgeline sits at the foot of Blocked apps; the reeds
+  at the foot of Permissions. Settings keeps only its door — the potted-pine render was not
+  accepted, and the screen is calm without a picture.

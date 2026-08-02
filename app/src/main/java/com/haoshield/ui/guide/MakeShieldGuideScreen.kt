@@ -31,12 +31,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.domain.model.ScanMode
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoPrimaryButton
@@ -154,6 +157,15 @@ private fun GuideContentStep(
                 color = HaoTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+            )
+
+            // Hands folding paper — the craft this page teaches. Tinted, not baked, so the
+            // drawing follows Calm and Dusk.
+            Image(
+                painter = painterResource(R.drawable.ill_guide_folding),
+                contentDescription = null,
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                colorFilter = ColorFilter.tint(HaoTheme.colors.inkSoft),
             )
         }
 
@@ -471,6 +483,16 @@ private fun RegistrationSuccessStep(message: String, onContinue: () -> Unit) {
             modifier = Modifier.padding(top = HaoTheme.spacing.md),
             style = HaoTheme.type.body,
             color = HaoTheme.colors.inkSoft,
+        )
+
+        // Cranes taking flight, their crowns the palette's one accent — the only piece that
+        // keeps its own colour, so no tint here; drawable-night carries its dusk form.
+        Image(
+            painter = painterResource(R.drawable.ill_div_cranes),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = HaoTheme.spacing.xl),
         )
 
         Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))

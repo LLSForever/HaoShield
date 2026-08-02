@@ -7,5 +7,8 @@
     <color name="hao_paper">#F5F3ED</color>
     <color name="hao_ink">#3E4A3D</color>
     <color name="hao_ink_soft">#7A8377</color>
+    <!-- inkFaint is derived in Compose (inkSoft at 62% alpha); this is that value flattened
+         into ARGB for the overlay's bell. -->
+    <color name="hao_ink_faint">#9E7A8377</color>
     <color name="hao_seal">#8C4A3F</color>
 </resources>

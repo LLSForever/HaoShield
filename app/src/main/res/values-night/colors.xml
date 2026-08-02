@@ -7,5 +7,7 @@
     <color name="hao_paper">#1F231E</color>
     <color name="hao_ink">#A8B5A5</color>
     <color name="hao_ink_soft">#7C8A79</color>
+    <!-- inkFaint at dusk — InkLiftedSoft at 62% alpha, mirrored from the Compose token. -->
+    <color name="hao_ink_faint">#9E7C8A79</color>
     <color name="hao_seal">#C0705C</color>
 </resources>

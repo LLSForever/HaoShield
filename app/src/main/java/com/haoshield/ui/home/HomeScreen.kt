@@ -10,6 +10,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +30,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +40,7 @@ import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.domain.model.BlockingMode
 import com.haoshield.ui.components.HaoGlyphButton
 import com.haoshield.ui.navigation.Route
@@ -167,6 +171,14 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // The anchor piece: a far temple beneath the glyph's space, at the whisper register —
+        // beneath the content, never in the glyph's way. Intrinsic size (240dp wide at 3x).
+        Image(
+            painter = painterResource(R.drawable.ill_home_temple),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(HaoTheme.colors.inkFaint),
+        )
 
         // Keep the physical ritual discoverable for anyone who hasn't made a Shield yet, rather
         // than leaving it buried in Settings.

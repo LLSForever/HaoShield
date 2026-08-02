@@ -1,5 +1,6 @@
 package com.haoshield.ui.blockedapps
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.ui.components.HaoBackLink
 import com.haoshield.ui.components.HaoSectionLabel
 import com.haoshield.ui.components.HaoSelectionDot
@@ -101,6 +105,17 @@ fun BlockedAppsScreen(
                 modifier = Modifier.padding(top = HaoTheme.spacing.md),
             )
         }
+
+        // The ridgeline at the foot of the page — a boundary drawn in one line, in the same
+        // register as the journal's mountains. Stone: furniture, not a picture to look at.
+        Image(
+            painter = painterResource(R.drawable.ill_div_pines),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = HaoTheme.spacing.xl),
+            colorFilter = ColorFilter.tint(HaoTheme.colors.stone),
+        )
 
         Spacer(modifier = Modifier.padding(bottom = HaoTheme.spacing.xxl))
     }

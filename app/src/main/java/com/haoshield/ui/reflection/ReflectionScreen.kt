@@ -1,5 +1,6 @@
 package com.haoshield.ui.reflection
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,9 +16,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoTextField
 import com.haoshield.ui.theme.HaoTheme
@@ -42,6 +46,15 @@ fun ReflectionScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        // The crane at rest in still water — the session's stillness, looked back on.
+        // Tinted, not baked, so it follows Calm and Dusk.
+        Image(
+            painter = painterResource(R.drawable.ill_reflection_crane),
+            contentDescription = null,
+            modifier = Modifier.padding(bottom = HaoTheme.spacing.lg),
+            colorFilter = ColorFilter.tint(HaoTheme.colors.inkSoft),
+        )
+
         Text(
             text = "Your protected time is complete.",
             style = HaoTheme.type.heading,

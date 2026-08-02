@@ -48,6 +48,18 @@
             android:textColor="@color/hao_ink_soft"
             android:textSize="16sp" />
 
+        <!-- The bell at rest — stillness that can be woken. Decorative; tinted through
+             values/values-night like the rest of this View layout, which cannot read the
+             Compose theme tokens. -->
+        <ImageView
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:adjustViewBounds="true"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ill_overlay_bell"
+            android:tint="@color/hao_ink_faint" />
+
         <TextView
             android:id="@+id/overlay_unblock_action"
             android:layout_width="wrap_content"

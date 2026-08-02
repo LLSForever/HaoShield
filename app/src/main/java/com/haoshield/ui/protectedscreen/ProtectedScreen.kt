@@ -14,6 +14,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,16 +49,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.util.lerp
 import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.haoshield.R
 import com.haoshield.domain.model.SessionMode
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoSecondaryButton
@@ -193,6 +197,15 @@ fun ProtectedScreen(
                     style = HaoTheme.type.body,
                     color = HaoTheme.colors.inkSoft,
                     textAlign = TextAlign.Center,
+                )
+
+                // Incense below the clock — time passing without being counted. Faint, and it
+                // withdraws with the rest of the still centre while an intention is written.
+                Image(
+                    painter = painterResource(R.drawable.ill_session_incense),
+                    contentDescription = null,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                    colorFilter = ColorFilter.tint(HaoTheme.colors.inkFaint),
                 )
 
                 // The hint retires by fading alone — its line stays reserved, so the clock above

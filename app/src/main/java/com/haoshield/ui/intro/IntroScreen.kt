@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -27,8 +28,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.haoshield.R
 import com.haoshield.ui.components.HaoPrimaryButton
 import com.haoshield.ui.components.HaoTextLink
 import com.haoshield.ui.components.haoSealed
@@ -78,7 +82,7 @@ fun IntroScreen(
             modifier = Modifier.weight(1f),
             beyondViewportPageCount = 1,
         ) { pageIndex ->
-            IntroPageContent(page = pages[pageIndex])
+            IntroPageContent(page = pages[pageIndex], artRes = IntroArt.getOrNull(pageIndex))
         }
 
         PageDots(
@@ -115,8 +119,18 @@ fun IntroScreen(
     }
 }
 
+// One small piece above each page's title, keyed by position. The drawable ids live here
+// rather than on IntroPage, which is shared commonMain data and cannot carry them.
+private val IntroArt = listOf(
+    R.drawable.ill_intro_nature,
+    R.drawable.ill_intro_pulled,
+    R.drawable.ill_intro_space,
+    R.drawable.ill_intro_offers,
+    R.drawable.ill_intro_works,
+)
+
 @Composable
-private fun IntroPageContent(page: IntroPage) {
+private fun IntroPageContent(page: IntroPage, artRes: Int?) {
     // Left-aligned and set at reading size: these pages carry real paragraphs, and centred display
     // type overflowed the shorter screens. Reads as a page of a book rather than a splash.
     Column(
@@ -129,6 +143,18 @@ private fun IntroPageContent(page: IntroPage) {
     ) {
         if (page.showGlyph) {
             Text(text = "好", style = HaoTheme.type.glyphSmall, color = HaoTheme.colors.ink)
+            Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+        }
+
+        if (artRes != null) {
+            // Drawn at intrinsic size — the assets are exported at 3x their dp width for
+            // xxhdpi, so no modifier is the manifest size. Tinted, not baked, like the
+            // journal pieces, so the drawing follows Calm and Dusk.
+            Image(
+                painter = painterResource(artRes),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(HaoTheme.colors.inkSoft),
+            )
             Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
         }
 
