@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import com.haoshield.MainActivity
@@ -55,26 +56,38 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     private suspend fun handleForegroundPackage(packageName: String) {
         if (!blockingPolicy.shouldBlock(packageName)) {
-            overlayManager.hide()
+            // Dismissing a resting app lands on the home screen (or another system surface) with
+            // the shield still up — that's expected, so those surfaces don't take the shield down.
+            // Any real app coming forward reclaims the screen.
+            if (!(overlayManager.isShowing && isSystemSurface(packageName))) {
+                overlayManager.hide()
+            }
             return
         }
 
-        if (!overlayManager.canDrawOverlay()) {
-            // Without overlay permission we can't show the calm screen; at least step the user away.
-            performGlobalAction(GLOBAL_ACTION_HOME)
-            return
+        if (overlayManager.canDrawOverlay()) {
+            overlayManager.show(
+                onUnblock = {
+                    overlayManager.hide()
+                    launchUnblock(packageName)
+                },
+                onStepAway = {
+                    overlayManager.hide()
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                },
+            )
         }
 
-        overlayManager.show(
-            onUnblock = {
-                overlayManager.hide()
-                launchUnblock(packageName)
-            },
-            onStepAway = {
-                overlayManager.hide()
-                performGlobalAction(GLOBAL_ACTION_HOME)
-            },
-        )
+        // Dismiss the resting app instead of leaving it running behind the shield, where the app
+        // switcher would still expose its live content.
+        performGlobalAction(GLOBAL_ACTION_HOME)
+    }
+
+    private fun isSystemSurface(packageName: String): Boolean {
+        if (packageName == "android" || packageName == "com.android.systemui") return true
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager.queryIntentActivities(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
+            .any { it.activityInfo.packageName == packageName }
     }
 
     private fun launchUnblock(packageName: String) {

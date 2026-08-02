@@ -21,21 +21,29 @@ class BlockingOverlayManager @Inject constructor(
         context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var overlayView: View? = null
 
+    val isShowing: Boolean
+        get() = overlayView != null
+
     fun canDrawOverlay(): Boolean = Settings.canDrawOverlays(context)
 
     /**
      * Show the calm protected screen over a blocked app. It stays until the user makes a conscious
      * choice — [onUnblock] to write an intention and let the app through, or [onStepAway] to leave.
+     * If the screen is already showing, the actions are rebound so they target the latest app.
      */
     fun show(
         onUnblock: () -> Unit,
         onStepAway: () -> Unit,
     ) {
-        if (!canDrawOverlay() || overlayView != null) return
+        if (!canDrawOverlay()) return
+
+        overlayView?.let { view ->
+            bindActions(view, onUnblock, onStepAway)
+            return
+        }
 
         val view = LayoutInflater.from(context).inflate(R.layout.view_blocking_overlay, null)
-        view.findViewById<TextView>(R.id.overlay_unblock_action).setOnClickListener { onUnblock() }
-        view.findViewById<TextView>(R.id.overlay_step_away_action).setOnClickListener { onStepAway() }
+        bindActions(view, onUnblock, onStepAway)
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -51,6 +59,15 @@ class BlockingOverlayManager @Inject constructor(
 
         windowManager.addView(view, params)
         overlayView = view
+    }
+
+    private fun bindActions(
+        view: View,
+        onUnblock: () -> Unit,
+        onStepAway: () -> Unit,
+    ) {
+        view.findViewById<TextView>(R.id.overlay_unblock_action).setOnClickListener { onUnblock() }
+        view.findViewById<TextView>(R.id.overlay_step_away_action).setOnClickListener { onStepAway() }
     }
 
     fun hide() {
