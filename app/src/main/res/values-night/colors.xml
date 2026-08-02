@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dusk palette — MUST mirror DarkHaoColors in com.haoshield.ui.theme.Color.kt.
+         These back the blocking overlay, which is a plain View layout and cannot read
+         the Compose tokens. ic_launcher_background is deliberately not overridden:
+         the launcher icon keeps its paper ground in both themes. -->
+    <color name="hao_paper">#1F231E</color>
+    <color name="hao_ink">#A8B5A5</color>
+    <color name="hao_ink_soft">#7C8A79</color>
+    <color name="hao_seal">#C0705C</color>
+</resources>

@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.haoshield.domain.model.Session
 import com.haoshield.domain.model.SessionMode
+import com.haoshield.domain.service.SessionSnapshot
+import com.haoshield.domain.service.SessionStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,18 +23,15 @@ private val Context.sessionDataStore: DataStore<Preferences> by preferencesDataS
     name = "session_preferences",
 )
 
-data class PersistedSessionSnapshot(
-    val session: Session,
-    val temporarilyAllowedPackages: Set<String>,
-)
+private const val NO_INTENTION = ""
 
 @Singleton
 class SessionPreferencesDataStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : SessionStore {
     private val dataStore = context.sessionDataStore
 
-    fun observePersistedSession(): Flow<PersistedSessionSnapshot?> =
+    override fun observePersistedSession(): Flow<SessionSnapshot?> =
         dataStore.data.map { preferences ->
             val isActive = preferences[Keys.IS_ACTIVE] ?: false
             if (!isActive) return@map null
@@ -41,45 +40,73 @@ class SessionPreferencesDataStore @Inject constructor(
             val mode = runCatching { SessionMode.valueOf(modeName) }.getOrNull()
                 ?: return@map null
 
-            PersistedSessionSnapshot(
+            SessionSnapshot(
                 session = Session(
                     id = preferences[Keys.SESSION_ID] ?: return@map null,
                     mode = mode,
                     startedAtEpochMillis = preferences[Keys.STARTED_AT] ?: return@map null,
                     isActive = true,
+                    intention = preferences[Keys.INTENTION]?.takeIf { it != NO_INTENTION },
                 ),
-                temporarilyAllowedPackages = preferences[Keys.ALLOWED_PACKAGES].orEmpty(),
+                temporarilyAllowedPackages = preferences[Keys.ALLOWED_PACKAGES]
+                    .orEmpty()
+                    .decodeAllowances(),
             )
         }
 
-    suspend fun persistActiveSession(
+    override suspend fun persistActiveSession(
         session: Session,
-        temporarilyAllowedPackages: Set<String>,
+        temporarilyAllowedPackages: Map<String, Long>,
     ) {
         dataStore.edit { preferences ->
             preferences[Keys.IS_ACTIVE] = true
             preferences[Keys.SESSION_ID] = session.id
             preferences[Keys.MODE] = session.mode.name
             preferences[Keys.STARTED_AT] = session.startedAtEpochMillis
-            preferences[Keys.ALLOWED_PACKAGES] = temporarilyAllowedPackages
+            preferences[Keys.ALLOWED_PACKAGES] = temporarilyAllowedPackages.encodeAllowances()
+            preferences[Keys.INTENTION] = session.intention ?: NO_INTENTION
         }
     }
 
-    suspend fun persistAllowedPackages(packages: Set<String>) {
+    override suspend fun persistIntention(intention: String) {
         dataStore.edit { preferences ->
             if (preferences[Keys.IS_ACTIVE] == true) {
-                preferences[Keys.ALLOWED_PACKAGES] = packages
+                preferences[Keys.INTENTION] = intention
             }
         }
     }
 
-    suspend fun clearSession() {
+    override suspend fun persistAllowedPackages(packages: Map<String, Long>) {
+        dataStore.edit { preferences ->
+            if (preferences[Keys.IS_ACTIVE] == true) {
+                preferences[Keys.ALLOWED_PACKAGES] = packages.encodeAllowances()
+            }
+        }
+    }
+
+    // Each allowance is stored as "packageName|expiryEpochMillis". Legacy plain-package entries (a
+    // session live across the update that introduced expiry) have no delimiter and are dropped —
+    // fail-closed, so the app re-blocks and the user can simply unblock again.
+    private fun Map<String, Long>.encodeAllowances(): Set<String> =
+        map { (pkg, expiry) -> "$pkg$ALLOWANCE_DELIMITER$expiry" }.toSet()
+
+    private fun Set<String>.decodeAllowances(): Map<String, Long> =
+        mapNotNull { entry ->
+            val delimiter = entry.lastIndexOf(ALLOWANCE_DELIMITER)
+            if (delimiter <= 0) return@mapNotNull null
+            val pkg = entry.substring(0, delimiter)
+            val expiry = entry.substring(delimiter + 1).toLongOrNull() ?: return@mapNotNull null
+            pkg to expiry
+        }.toMap()
+
+    override suspend fun clearSession() {
         dataStore.edit { preferences ->
             preferences.remove(Keys.IS_ACTIVE)
             preferences.remove(Keys.SESSION_ID)
             preferences.remove(Keys.MODE)
             preferences.remove(Keys.STARTED_AT)
             preferences.remove(Keys.ALLOWED_PACKAGES)
+            preferences.remove(Keys.INTENTION)
         }
     }
 
@@ -89,5 +116,10 @@ class SessionPreferencesDataStore @Inject constructor(
         val MODE = stringPreferencesKey("session_mode")
         val STARTED_AT = longPreferencesKey("session_started_at")
         val ALLOWED_PACKAGES = stringSetPreferencesKey("allowed_packages")
+        val INTENTION = stringPreferencesKey("session_intention")
+    }
+
+    private companion object {
+        const val ALLOWANCE_DELIMITER = '|'
     }
 }

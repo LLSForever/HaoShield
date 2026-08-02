@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Night variant of the pre-Compose window theme. The background colour resolves
+      from values-night/colors.xml; only the status-bar icon appearance differs here.
+      (Once Compose is up, MainActivity drives the bars from the user's own preference.)
+    -->
+    <style name="Theme.HaoShield" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/hao_paper</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

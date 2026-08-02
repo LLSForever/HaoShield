@@ -17,6 +17,7 @@ on:
   push:
     branches:
       - main
+      - 'feature/**'
       - 'claude/**'
   workflow_dispatch:
 
@@ -66,10 +67,12 @@ jobs:
             echo "::warning::DEBUG_KEYSTORE_BASE64 is not set. This build gets a throwaway debug key, so you may have to uninstall the app before installing it."
           fi
 
+      # :app: only — the repo also holds :desktopApp, which has no Android variants.
+      # GITHUB_RUN_NUMBER is read by app/build.gradle.kts to stamp versionCode/versionName.
       - name: Build the debug APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Name the APK after the commit
         id: apk
@@ -96,6 +99,8 @@ jobs:
         run: |
           cat > release-notes.md <<NOTES
           Debug build of \`${GITHUB_REF_NAME}\` at ${SHORT_SHA}.
+
+          Installs as version \`1.0.0-build.${GITHUB_RUN_NUMBER}\` — check Settings > Apps > Hǎo Shield to confirm which build is on the phone.
 
           Install on a phone: download \`haoshield-debug.apk\` below, then allow your browser to install unknown apps when prompted.
 

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The blocking boundary. Must stay a plain View layout (system overlay window), but its
+     palette, fonts, and spacing mirror the Compose design system: paper ground, serif voice
+     for the glyph and title, Inter for information, no ripples, 8pt spacing. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F3EE"
+    android:background="@color/hao_paper"
     android:clickable="true"
     android:focusable="true">
 
@@ -14,60 +17,81 @@
         android:orientation="vertical"
         android:padding="40dp">
 
+        <!-- The bundled single-glyph face, so this 好 matches the app rather than resolving to
+             whatever CJK font the device happens to ship. -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
+            android:fontFamily="@font/noto_serif_hao"
             android:text="好"
-            android:textColor="#5C6B5C"
-            android:textSize="64sp" />
+            android:textColor="@color/hao_ink"
+            android:textSize="72sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:fontFamily="sans-serif-light"
-            android:letterSpacing="0.02"
+            android:fontFamily="@font/noto_serif_variable"
             android:text="@string/overlay_protected_title"
-            android:textColor="#5C6B5C"
-            android:textSize="24sp" />
+            android:textColor="@color/hao_ink"
+            android:textSize="22sp" />
 
         <TextView
+            android:id="@+id/overlay_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter_variable"
             android:gravity="center"
-            android:lineSpacingExtra="6dp"
+            android:lineSpacingExtra="8dp"
             android:text="@string/overlay_protected_message"
-            android:textColor="#6B6B68"
+            android:textColor="@color/hao_ink_soft"
             android:textSize="16sp" />
 
         <TextView
             android:id="@+id/overlay_unblock_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="48dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/bg_overlay_primary"
             android:clickable="true"
             android:focusable="true"
+            android:fontFamily="@font/inter_variable"
             android:paddingHorizontal="24dp"
             android:paddingVertical="12dp"
             android:text="@string/overlay_unblock_action"
-            android:textColor="#5C6B5C"
+            android:textColor="@color/hao_paper"
             android:textSize="16sp" />
 
         <TextView
             android:id="@+id/overlay_step_away_action"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:layout_marginTop="8dp"
+            android:background="@null"
             android:clickable="true"
             android:focusable="true"
+            android:fontFamily="@font/inter_variable"
             android:paddingHorizontal="24dp"
             android:paddingVertical="12dp"
             android:text="@string/overlay_step_away_action"
-            android:textColor="#6B6B68"
-            android:textSize="15sp" />
+            android:textColor="@color/hao_ink_soft"
+            android:textSize="14sp" />
+
+        <!-- Step away goes to the launcher; this goes back to the running session, so the
+             boundary isn't a dead end that forces a trip through Home. -->
+        <TextView
+            android:id="@+id/overlay_open_session_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/inter_variable"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="@string/overlay_open_session_action"
+            android:textColor="@color/hao_ink_soft"
+            android:textSize="14sp" />
     </LinearLayout>
 </FrameLayout>

@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Set by GitHub Actions on every run; absent for local builds.
+val ciRunNumber: Int? = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+
 android {
     namespace = "com.haoshield"
     compileSdk = 35
@@ -14,8 +17,11 @@ android {
         applicationId = "com.haoshield"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // CI stamps each build with its run number so Android sees successive builds as
+        // upgrades and the installed version says which build it came from. Local builds
+        // stay at 1 / 1.0.0.
+        versionCode = ciRunNumber ?: 1
+        versionName = ciRunNumber?.let { "1.0.0-build.$it" } ?: "1.0.0"
     }
 
     buildTypes {
@@ -43,6 +49,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared:domain"))
+    implementation(project(":shared:data"))
+    implementation(project(":shared:ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -60,6 +69,17 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.mlkit.vision)
+    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.zxing.core)
     kapt(libs.hilt.compiler)
     kapt(libs.androidx.room.compiler)
+
+    // Plain JVM unit tests. The session rules depend only on interfaces, so they need no
+    // emulator, no Robolectric, and no Android framework at all.
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

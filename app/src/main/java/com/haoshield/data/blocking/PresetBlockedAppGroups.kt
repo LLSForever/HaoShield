@@ -34,3 +34,24 @@ internal val PresetBlockedAppGroups: List<BlockedAppGroup> = listOf(
         ),
     ),
 )
+
+/**
+ * Human names for the curated packages.
+ *
+ * PackageManager can only name an app that is *installed*, so anything on the preset list the
+ * person doesn't have would otherwise show as a raw id ("com.zhiliaoapp.musically"). These names
+ * let the blocked-apps list stay readable either way.
+ */
+internal val PresetAppNames: Map<String, String> = mapOf(
+    "com.instagram.android" to "Instagram",
+    "com.zhiliaoapp.musically" to "TikTok",
+    "com.facebook.katana" to "Facebook",
+    "com.twitter.android" to "X",
+    "com.snapchat.android" to "Snapchat",
+    "com.reddit.frontpage" to "Reddit",
+    "com.pinterest" to "Pinterest",
+    "com.instagram.barcelona" to "Threads",
+    "com.google.android.youtube" to "YouTube",
+    "com.netflix.mediaclient" to "Netflix",
+    "tv.twitch.android.app" to "Twitch",
+)

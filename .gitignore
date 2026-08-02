@@ -11,3 +11,6 @@ build/
 *.ap_
 *.aab
 output.json
+
+# Build output that shouldn't be tracked
+/app/debug/

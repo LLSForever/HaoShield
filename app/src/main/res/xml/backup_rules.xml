@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (dataExtractionRules). Exclude the live-session and shield-token stores: restoring
+  them onto a new device or reinstall would resurrect a stale "active" session or a Shield token
+  the user no longer physically holds. Settings/journal are fine to carry over.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/session_preferences.preferences_pb" />
+        <exclude domain="file" path="datastore/shield_preferences.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/session_preferences.preferences_pb" />
+        <exclude domain="file" path="datastore/shield_preferences.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>

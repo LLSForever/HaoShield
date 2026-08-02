@@ -1,8 +1,18 @@
 package com.haoshield.ui.guide
 
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,55 +20,104 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
-private val WarmBackground = Color(0xFFF7F5F0)
-private val Sage = Color(0xFF5C6B5C)
-private val MutedText = Color(0xFF6B6B68)
-private val SoftAccent = Color(0xFFE8E4DC)
+import com.haoshield.domain.model.ScanMode
+import com.haoshield.ui.components.HaoBackLink
+import com.haoshield.ui.components.HaoPrimaryButton
+import com.haoshield.ui.components.HaoSecondaryButton
+import com.haoshield.ui.theme.HaoMotion
+import com.haoshield.ui.theme.HaoTheme
 
 @Composable
 fun MakeShieldGuideScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToScanner: (ScanMode) -> Unit,
     viewModel: MakeShieldGuideViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as ComponentActivity
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
 
-    when (uiState.step) {
-        GuideStep.CONTENT -> GuideContentStep(
-            uiState = uiState,
-            onNavigateBack = onNavigateBack,
-            onBeginRegistration = viewModel::onBeginRegistration,
-        )
-        GuideStep.REGISTER -> {
-            DisposableEffect(Unit) {
-                viewModel.onEnterRegistrationMode(activity)
-                onDispose { viewModel.onLeaveRegistrationMode(activity) }
-            }
-            RegisterShieldStep(
+    // NFC registration mode is tied to being on the REGISTER step. Hoisted here (not inside the
+    // step content) because under Crossfade both old and new step contents compose during the
+    // transition — an effect inside the branch would race enable/disable.
+    val isRegisterStep = uiState.step == GuideStep.REGISTER
+    DisposableEffect(isRegisterStep) {
+        if (isRegisterStep) viewModel.onEnterRegistrationMode(activity)
+        onDispose {
+            if (isRegisterStep) viewModel.onLeaveRegistrationMode(activity)
+        }
+    }
+
+    Crossfade(
+        targetState = uiState.step,
+        animationSpec = tween(HaoMotion.STANDARD),
+        label = "guideStep",
+    ) { step ->
+        when (step) {
+            GuideStep.CONTENT -> GuideContentStep(
                 uiState = uiState,
+                onNavigateBack = onNavigateBack,
+                onBeginRegistration = viewModel::onBeginRegistration,
+                onChoosePrintedCode = viewModel::onChooseQrMethod,
+            )
+            GuideStep.CHOOSE_METHOD -> ChooseMethodStep(
+                isGeneratingQr = uiState.isGeneratingQr,
+                onChooseNfc = viewModel::onChooseNfcMethod,
+                onChooseQr = viewModel::onChooseQrMethod,
                 onBack = viewModel::onBackToContent,
             )
+            GuideStep.REGISTER -> RegisterShieldStep(
+                uiState = uiState,
+                onBack = viewModel::onBackToChooseMethod,
+            )
+            GuideStep.QR_DISPLAY -> QrDisplayStep(
+                uiState = uiState,
+                onPrint = { uiState.qrBitmap?.let { ShieldQrPrinter.print(context, it) } },
+                onSaveImage = { uiState.qrBitmap?.let { ShieldQrSharing.share(context, it) } },
+                onConfirmScan = { onNavigateToScanner(ScanMode.REGISTRATION) },
+                onCreateNew = viewModel::onCreateNewQrCode,
+                onBack = viewModel::onBackToChooseMethod,
+            )
+            GuideStep.SUCCESS -> RegistrationSuccessStep(
+                message = uiState.statusMessage ?: MakeShieldGuideContent.registerSuccess,
+                onContinue = viewModel::onDismissSuccess,
+            )
         }
-        GuideStep.SUCCESS -> RegistrationSuccessStep(
-            onContinue = viewModel::onDismissSuccess,
-        )
     }
+}
+
+@Composable
+private fun ScreenColumn(
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = HaoTheme.spacing.screenH),
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
 }
 
 @Composable
@@ -66,93 +125,251 @@ private fun GuideContentStep(
     uiState: MakeShieldGuideUiState,
     onNavigateBack: () -> Unit,
     onBeginRegistration: () -> Unit,
+    onChoosePrintedCode: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(WarmBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-    ) {
-        TextButton(onClick = onNavigateBack) {
-            Text(text = "Back", color = MutedText)
+    ScreenColumn {
+        HaoBackLink(onClick = onNavigateBack)
+
+        // Hero.
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "好",
+                style = HaoTheme.type.glyphSmall,
+                color = HaoTheme.colors.ink,
+            )
+            Text(
+                text = MakeShieldGuideContent.screenTitle,
+                style = HaoTheme.type.display,
+                color = HaoTheme.colors.ink,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+            )
+            Text(
+                text = MakeShieldGuideContent.subtitle,
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+            )
         }
-
-        Text(
-            text = MakeShieldGuideContent.screenTitle,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light),
-            color = Sage,
-        )
-
-        Text(
-            text = MakeShieldGuideContent.introduction,
-            modifier = Modifier.padding(top = 16.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
 
         Text(
             text = MakeShieldGuideContent.physicalStrengthMessage,
             modifier = Modifier
-                .padding(top = 20.dp)
+                .padding(top = HaoTheme.spacing.xl)
                 .fillMaxWidth()
-                .background(SoftAccent)
-                .padding(16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Sage,
+                .clip(HaoTheme.shapes.panel)
+                .background(HaoTheme.colors.stone)
+                .padding(HaoTheme.spacing.md),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.ink,
         )
 
-        MakeShieldGuideContent.sections.forEach { section ->
-            Text(
-                text = section.title,
-                modifier = Modifier.padding(top = 28.dp),
-                style = MaterialTheme.typography.titleMedium,
-                color = Sage,
-            )
-            Text(
-                text = section.body,
-                modifier = Modifier.padding(top = 8.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MutedText,
-            )
+        MakeShieldGuideContent.craftSteps.forEach { step ->
+            NumberedStep(number = step.number, title = step.title, body = step.body)
         }
 
         if (uiState.registeredUid != null) {
             Text(
                 text = MakeShieldGuideContent.alreadyRegistered,
-                modifier = Modifier.padding(top = 28.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MutedText.copy(alpha = 0.85f),
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkFaint,
             )
         }
+
+        // The printed route, stated here rather than hidden one tap deeper — someone with no tag
+        // (or no NFC at all) would otherwise read four sticker-shaped steps and give up.
+        Text(
+            text = if (uiState.isNfcAvailable) {
+                MakeShieldGuideContent.printedAlternative
+            } else {
+                MakeShieldGuideContent.noNfcOnDevice
+            },
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+        )
 
         Text(
             text = MakeShieldGuideContent.registerPrompt,
-            modifier = Modifier.padding(top = 24.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
 
-        TextButton(
+        HaoPrimaryButton(
+            text = if (uiState.registeredUid == null) "Register your Shield" else "Register another",
             onClick = onBeginRegistration,
             modifier = Modifier.fillMaxWidth(),
-        ) {
+        )
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+
+        HaoSecondaryButton(
+            text = if (uiState.isGeneratingQr) "Preparing…" else "Make a printed code",
+            onClick = onChoosePrintedCode,
+            enabled = !uiState.isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
+    }
+}
+
+@Composable
+private fun NumberedStep(number: Int, title: String, body: String) {
+    Row(modifier = Modifier.padding(top = HaoTheme.spacing.lg)) {
+        Text(
+            text = number.toString(),
+            style = HaoTheme.type.heading,
+            color = HaoTheme.colors.inkSoft,
+        )
+        Spacer(modifier = Modifier.width(HaoTheme.spacing.md))
+        Column {
+            Text(text = title, style = HaoTheme.type.heading, color = HaoTheme.colors.ink)
             Text(
-                text = if (uiState.registeredUid == null) {
-                    "Register your Shield"
-                } else {
-                    "Register a new Shield"
-                },
-                style = MaterialTheme.typography.labelLarge,
-                color = Sage,
+                text = body,
+                modifier = Modifier.padding(top = HaoTheme.spacing.xs),
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChooseMethodStep(
+    isGeneratingQr: Boolean,
+    onChooseNfc: () -> Unit,
+    onChooseQr: () -> Unit,
+    onBack: () -> Unit,
+) {
+    ScreenColumn {
+        HaoBackLink(onClick = onBack)
+
+        Text(
+            text = "Choose your Shield",
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
+            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
+        )
+        Text(
+            text = MakeShieldGuideContent.chooseMethodPrompt,
+            modifier = Modifier.padding(top = HaoTheme.spacing.md),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+        )
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
+
+        HaoPrimaryButton(
+            text = MakeShieldGuideContent.methodNfcLabel,
+            onClick = onChooseNfc,
+            enabled = !isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+        HaoSecondaryButton(
+            text = if (isGeneratingQr) "Preparing…" else MakeShieldGuideContent.methodQrLabel,
+            onClick = onChooseQr,
+            enabled = !isGeneratingQr,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun QrDisplayStep(
+    uiState: MakeShieldGuideUiState,
+    onPrint: () -> Unit,
+    onSaveImage: () -> Unit,
+    onConfirmScan: () -> Unit,
+    onCreateNew: () -> Unit,
+    onBack: () -> Unit,
+) {
+    ScreenColumn(horizontalAlignment = Alignment.CenterHorizontally) {
+        HaoBackLink(onClick = onBack, modifier = Modifier.align(Alignment.Start))
+
+        Text(
+            text = "Your printed Shield",
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = HaoTheme.spacing.sm),
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
+        )
+        Text(
+            text = MakeShieldGuideContent.qrDisplayInstruction,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = HaoTheme.spacing.md),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+        )
+
+        uiState.qrBitmap?.let { bitmap ->
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Your Hǎo Shield QR code",
+                modifier = Modifier
+                    .padding(top = HaoTheme.spacing.lg)
+                    .fillMaxWidth(0.7f)
+                    .clip(HaoTheme.shapes.card),
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+
+        HaoPrimaryButton(
+            text = "Print on A4",
+            onClick = onPrint,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TextButton(onClick = onSaveImage, modifier = Modifier.padding(top = HaoTheme.spacing.xs)) {
+            Text(text = "Save as image", style = HaoTheme.type.caption, color = HaoTheme.colors.inkSoft)
+        }
+
+        Text(
+            text = if (uiState.isQrAlreadyRegistered) {
+                MakeShieldGuideContent.qrAlreadyRegistered
+            } else {
+                MakeShieldGuideContent.qrConfirmPrompt
+            },
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
+        )
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.md))
+
+        if (uiState.isQrAlreadyRegistered) {
+            // Replacing is a real loss — the printed sheet stops working — so it's the quiet
+            // option, not the obvious one.
+            TextButton(onClick = onCreateNew, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Create a new code instead",
+                    style = HaoTheme.type.caption,
+                    color = HaoTheme.colors.inkFaint,
+                )
+            }
+        } else {
+            HaoSecondaryButton(
+                text = "I've printed it — scan to confirm",
+                onClick = onConfirmScan,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
     }
 }
 
@@ -161,54 +378,40 @@ private fun RegisterShieldStep(
     uiState: MakeShieldGuideUiState,
     onBack: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(WarmBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 28.dp, vertical = 16.dp),
-    ) {
-        TextButton(onClick = onBack) {
-            Text(text = "Back", color = MutedText)
-        }
+    ScreenColumn {
+        HaoBackLink(onClick = onBack)
 
         Text(
             text = "Register your Shield",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
+            modifier = Modifier.padding(top = HaoTheme.spacing.sm),
         )
 
         when {
-            !uiState.isNfcAvailable -> {
-                Text(
-                    text = "This device does not support NFC. You can still use Software Mode.",
-                    modifier = Modifier.padding(top = 20.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MutedText,
-                )
-            }
-            !uiState.isNfcEnabled -> {
-                Text(
-                    text = "Please enable NFC in your device settings, then return here.",
-                    modifier = Modifier.padding(top = 20.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MutedText,
-                )
-            }
+            !uiState.isNfcAvailable -> Text(
+                text = "This device does not support NFC. You can still use a printed code, or " +
+                    "Software Mode.",
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
+            )
+            !uiState.isNfcEnabled -> Text(
+                text = "Please enable NFC in your device settings, then return here.",
+                modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                style = HaoTheme.type.body,
+                color = HaoTheme.colors.inkSoft,
+            )
             else -> {
                 Text(
                     text = MakeShieldGuideContent.registerInstruction,
-                    modifier = Modifier.padding(top = 20.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                    style = HaoTheme.type.body,
+                    color = HaoTheme.colors.ink,
                 )
-
-                Text(
+                WaitingBreathText(
                     text = "Waiting for your Shield…",
-                    modifier = Modifier.padding(top = 32.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MutedText.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = HaoTheme.spacing.xl),
                 )
             }
         }
@@ -216,50 +419,66 @@ private fun RegisterShieldStep(
         uiState.statusMessage?.let { message ->
             Text(
                 text = message,
-                modifier = Modifier.padding(top = 16.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MutedText,
+                modifier = Modifier.padding(top = HaoTheme.spacing.md),
+                style = HaoTheme.type.caption,
+                color = HaoTheme.colors.inkSoft,
             )
         }
     }
 }
 
+/** A caption that slowly breathes — the visual signal that the app is listening, live. */
 @Composable
-private fun RegistrationSuccessStep(onContinue: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(WarmBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 28.dp, vertical = 16.dp),
-    ) {
-        Spacer(modifier = Modifier.height(80.dp))
+private fun WaitingBreathText(text: String, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "waiting")
+    val breathAlpha by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(HaoMotion.BREATH, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "breathAlpha",
+    )
+    Text(
+        text = text,
+        modifier = modifier.graphicsLayer { alpha = breathAlpha },
+        style = HaoTheme.type.caption,
+        color = HaoTheme.colors.inkSoft,
+    )
+}
 
+@Composable
+private fun RegistrationSuccessStep(message: String, onContinue: () -> Unit) {
+    ScreenColumn {
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xxl))
+
+        // The seal: registration is stamped.
         Text(
-            text = MakeShieldGuideContent.registerSuccess,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Light),
-            color = Sage,
+            text = "好",
+            style = HaoTheme.type.glyphSmall,
+            color = HaoTheme.colors.seal,
         )
 
         Text(
-            text = "Tap your Shield to begin and end protected time in Shield Mode.",
-            modifier = Modifier.padding(top = 16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MutedText,
+            text = message,
+            modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+            style = HaoTheme.type.display,
+            color = HaoTheme.colors.ink,
+        )
+        Text(
+            text = "Tap or scan your Shield to begin and end protected time in Shield Mode.",
+            modifier = Modifier.padding(top = HaoTheme.spacing.md),
+            style = HaoTheme.type.body,
+            color = HaoTheme.colors.inkSoft,
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(HaoTheme.spacing.xl))
 
-        TextButton(
+        HaoPrimaryButton(
+            text = "Continue",
             onClick = onContinue,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                text = "Continue",
-                style = MaterialTheme.typography.labelLarge,
-                color = Sage,
-            )
-        }
+        )
     }
 }

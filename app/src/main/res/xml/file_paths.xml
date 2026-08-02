@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Generated Hǎo Shield QR images, shared for printing. -->
+    <cache-path
+        name="shield_qr"
+        path="shield_qr/" />
+</paths>

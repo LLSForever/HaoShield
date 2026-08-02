@@ -1,16 +1,30 @@
 package com.haoshield.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.haoshield.ui.theme.HaoMotion
+import com.haoshield.domain.model.ScanMode
+import com.haoshield.domain.model.ShieldScanResult
+import com.haoshield.ui.blockedapps.AppPickerScreen
+import com.haoshield.ui.blockedapps.BlockedAppsScreen
 import com.haoshield.ui.guide.MakeShieldGuideScreen
 import com.haoshield.ui.home.HomeScreen
+import com.haoshield.ui.intro.IntroScreen
+import com.haoshield.ui.onboarding.GettingStartedScreen
 import com.haoshield.ui.journal.JournalScreen
 import com.haoshield.ui.journal.UnblockAppScreen
+import com.haoshield.ui.permissions.PermissionsScreen
 import com.haoshield.ui.protectedscreen.ProtectedScreen
+import com.haoshield.ui.reflection.ReflectionScreen
+import com.haoshield.ui.scanner.QrScannerScreen
+import com.haoshield.ui.settings.SettingsScreen
 import com.haoshield.ui.setup.SetupScreen
 
 @Composable
@@ -21,12 +35,48 @@ fun HaoShieldNavHost(
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        // Screen changes are quiet crossfades — turning a page, not pushing a card.
+        enterTransition = { fadeIn(animationSpec = tween(HaoMotion.STANDARD)) },
+        exitTransition = { fadeOut(animationSpec = tween(HaoMotion.STANDARD)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.STANDARD)) },
+        popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.STANDARD)) },
     ) {
+        composable(Route.Intro.path) {
+            IntroScreen(
+                onFinished = {
+                    if (navController.previousBackStackEntry != null) {
+                        // Replayed from Settings — just return.
+                        navController.popBackStack()
+                    } else {
+                        // First run — bridge the philosophy to the practice.
+                        navController.navigate(Route.GettingStarted.path) {
+                            popUpTo(Route.Intro.path) { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
+        composable(Route.GettingStarted.path) {
+            GettingStartedScreen(
+                onMakeShield = {
+                    // Land on Home first so the guide's back returns there, then open the guide.
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.GettingStarted.path) { inclusive = true }
+                    }
+                    navController.navigate(Route.Guide.path)
+                },
+                onBeginLightly = {
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.GettingStarted.path) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Route.Home.path) {
             HomeScreen(
                 onNavigate = navController::navigate,
                 onNavigateToProtected = {
-                    navController.navigate(Route.Protected.path) {
+                    navController.navigate(Route.Protected.createRoute()) {
                         popUpTo(Route.Home.path) { inclusive = false }
                         launchSingleTop = true
                     }
@@ -36,7 +86,7 @@ fun HaoShieldNavHost(
         composable(Route.Setup.path) {
             SetupScreen(
                 onNavigateToProtected = {
-                    navController.navigate(Route.Protected.path) {
+                    navController.navigate(Route.Protected.createRoute()) {
                         popUpTo(Route.Home.path) { inclusive = false }
                         launchSingleTop = true
                     }
@@ -44,12 +94,71 @@ fun HaoShieldNavHost(
                 onNavigateBack = { navController.popBackStack() },
             )
         }
-        composable(Route.ShieldMode.path) {
-            // Shield mode screen — Phase 1 UI
+        composable(Route.Settings.path) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToGuide = { navController.navigate(Route.Guide.path) },
+                onNavigateToPermissions = { navController.navigate(Route.Permissions.path) },
+                onNavigateToIntro = { navController.navigate(Route.Intro.path) },
+                onNavigateToBlockedApps = { navController.navigate(Route.BlockedApps.path) },
+                // The door reuses the session's own without-your-Shield flow rather than a
+                // second copy of it living here.
+                onLeaveWithoutShield = {
+                    navController.navigate(Route.Protected.createRoute(emergency = true)) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+            )
         }
-        composable(Route.Protected.path) {
+        composable(Route.Permissions.path) {
+            PermissionsScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+        composable(
+            route = Route.Protected.path,
+            arguments = listOf(
+                navArgument(Route.Protected.ARG_EMERGENCY) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
+            // Entering and leaving a session is the app's most meaningful transition — slower.
+            enterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            exitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+        ) { entry ->
             ProtectedScreen(
+                openEmergencyExit = entry.arguments
+                    ?.getBoolean(Route.Protected.ARG_EMERGENCY) == true,
                 onNavigateHome = {
+                    navController.navigate(Route.Home.path) {
+                        popUpTo(Route.Home.path) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToReflection = {
+                    navController.navigate(Route.Reflection.path) {
+                        popUpTo(Route.Home.path) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToScanner = {
+                    navController.navigate(Route.QrScanner.createRoute(ScanMode.SESSION))
+                },
+            )
+        }
+        composable(
+            route = Route.Reflection.path,
+            enterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            exitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(HaoMotion.SLOW)) },
+            popExitTransition = { fadeOut(animationSpec = tween(HaoMotion.SLOW)) },
+        ) {
+            ReflectionScreen(
+                onDone = {
                     navController.navigate(Route.Home.path) {
                         popUpTo(Route.Home.path) { inclusive = true }
                         launchSingleTop = true
@@ -57,8 +166,21 @@ fun HaoShieldNavHost(
                 },
             )
         }
+        composable(Route.BlockedApps.path) {
+            BlockedAppsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAppPicker = { navController.navigate(Route.AppPicker.path) },
+            )
+        }
+        composable(Route.AppPicker.path) {
+            AppPickerScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
         composable(Route.Journal.path) {
-            JournalScreen()
+            JournalScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
         composable(
             route = Route.Unblock.path,
@@ -74,10 +196,30 @@ fun HaoShieldNavHost(
         composable(Route.Guide.path) {
             MakeShieldGuideScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToScanner = { mode ->
+                    navController.navigate(Route.QrScanner.createRoute(mode))
+                },
             )
         }
-        composable(Route.Letters.path) {
-            // Hǎo Letters opt-in — Phase 1 UI
+        composable(
+            route = Route.QrScanner.path,
+            arguments = listOf(
+                navArgument(Route.QrScanner.ARG_SCAN_MODE) { type = NavType.StringType },
+            ),
+        ) {
+            QrScannerScreen(
+                onFinished = { result ->
+                    // Session start/end navigation is owned by MainActivity's global collector
+                    // (it rebuilds the back stack via popUpTo(Home)); popping here too would race
+                    // with it. For registration and errors, just return to the caller.
+                    when (result) {
+                        is ShieldScanResult.SessionStarted,
+                        is ShieldScanResult.SessionEnded -> Unit
+                        else -> navController.popBackStack()
+                    }
+                },
+                onCancel = { navController.popBackStack() },
+            )
         }
     }
 }

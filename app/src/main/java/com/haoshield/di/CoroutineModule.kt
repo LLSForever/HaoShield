@@ -1,5 +1,6 @@
 package com.haoshield.di
 
+import com.haoshield.domain.di.ApplicationScope
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
