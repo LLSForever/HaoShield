@@ -120,7 +120,8 @@ Interchangeable horizontal bands for list headers, section breaks, empty states:
 4. **Placement discipline — the "without going overboard" rule:** at most one piece per
    screen; sized like the existing two (roughly 200–240dp wide); never behind text; never
    competing with the 好 glyph on screens the glyph anchors. If a screen already feels
-   calm, it does not need a picture.
+   calm, it does not need a picture. The one piece that runs wider is the Home temple,
+   which is ground rather than picture — see the note below.
 
 ---
 
@@ -136,8 +137,8 @@ Fourteen renders were accepted (2026-08-02). Process each with `scripts/prepare_
 | 3 | Moon gate onto misty ridge | `ill_intro_space` | 220 | 660 | Intro 3 | inkSoft |
 | 4 | Thatched pavilion, teapot, two cups | `ill_intro_offers` | 220 | 660 | Intro 4 | inkSoft |
 | 5 | Hand placing the token | `ill_intro_works` | 220 | 660 | Intro 5 | inkSoft |
-| 6 | Temple roof among pines over mist | `ill_home_temple` | 240 | 720 | Home, beneath content | inkFaint |
-| 7 | Incense stick, thread of smoke | `ill_session_incense` | 120 | 360 | Session screen | inkFaint |
+| 6 | Temple roof among pines over mist | `ill_home_temple` | 240 | 720 | Home, full-width band at the foot (see below) | inkFaint |
+| 7 | Incense stick, thread of smoke | `ill_session_incense` | 120 | 360 | Session screen, drawn at 150dp | inkFaint |
 | 8 | Temple bell hanging still | `ill_overlay_bell` | 160 | 480 | Blocking overlay | values/values-night colour |
 | 9 | Hands folding paper | `ill_guide_folding` | 220 | 660 | Make Shield guide | inkSoft |
 | 10 | Brush, inkstone, blank sheet | `ill_unblock_brush` | 200 | 600 | Unblock / intention | inkSoft |
@@ -155,6 +156,15 @@ Notes:
   overlay's other colours.
 - Tint emphasis follows the journal precedent: content-adjacent pieces at `inkSoft`,
   ambient/background pieces at `inkFaint` or `stone`. Art whispers.
+- **The temple as ground** (2026-08-07): the Home piece is no longer drawn at its 240dp
+  manifest width. It runs the full width of the screen, bottom-aligned and bleeding under
+  the gesture bar, cropped to the lower 340px of the render (a 2.12:1 band) so the empty
+  sky above the treeline is cut away and the band is all drawing. The links above it hold
+  that height open rather than overlapping it — nothing ever sits on the trees. This is the
+  one deliberate exception to the 200–240dp rule: at full width it reads as the ground the
+  screen stands on, which is the opposite of a picture asking to be looked at. The render is
+  720px wide, so it upscales at this size; if it ever reads soft, re-export at 1440px or
+  vectorize with potrace.
 - **Where the wide dividers landed** (2026-08-02): the cranes close the Make Shield guide's
   registration-success step (their crowns rhyming with the seal moment, with a generated
   `drawable-night` variant); the pine ridgeline sits at the foot of Blocked apps; the reeds

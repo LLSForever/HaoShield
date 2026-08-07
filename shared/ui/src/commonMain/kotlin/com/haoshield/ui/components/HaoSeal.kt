@@ -33,9 +33,11 @@ fun haoSealed(
             SpanStyle(
                 fontFamily = NotoSerifHao,
                 color = sealColor,
-                // CJK glyphs run optically larger than Latin at equal size; set slightly under
-                // the surrounding type so the seal accompanies the name without shouting it.
-                fontSize = 0.72.em,
+                // Matched by eye to the ascender beside it, not by point size: the character's
+                // ink fills roughly seven-eighths of its em box where a Latin ascender fills
+                // three-quarters, so equal sizes look unequal. At 0.72 the seal read as a
+                // footnote to the name; this stands it level with the letters it accompanies.
+                fontSize = 0.88.em,
             ),
         ) {
             append(" " + Hao.GOOD)

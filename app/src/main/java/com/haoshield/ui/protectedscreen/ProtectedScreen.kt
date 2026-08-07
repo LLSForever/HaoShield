@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -51,12 +52,14 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -201,10 +204,17 @@ fun ProtectedScreen(
 
                 // Incense below the clock — time passing without being counted. Faint, and it
                 // withdraws with the rest of the still centre while an intention is written.
+                // Drawn a quarter over its intrinsic 120×180dp: at the whisper register the small
+                // version read as a smudge, and the thread of smoke needs room to be a line. Not
+                // larger than this — the screen below it still has to hold the intention prompt
+                // and the way out without either being pushed off a short display.
                 Image(
                     painter = painterResource(R.drawable.ill_session_incense),
                     contentDescription = null,
-                    modifier = Modifier.padding(top = HaoTheme.spacing.lg),
+                    modifier = Modifier
+                        .padding(top = HaoTheme.spacing.lg)
+                        .size(width = 150.dp, height = 225.dp),
+                    contentScale = ContentScale.Fit,
                     colorFilter = ColorFilter.tint(HaoTheme.colors.inkFaint),
                 )
 
